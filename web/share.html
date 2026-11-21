@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <script>
+        try {
+            let theme = localStorage.getItem('theme');
+            if (theme) {
+                try { theme = JSON.parse(theme); } catch (e) { }
+            }
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        } catch (e) { console.error('Theme init error:', e); }
+        window.__AUTOPOST_INITIAL_PAGE__ = 'share';
+    </script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" href="/assets/icons/icon48.png" />
+    <title>Chia sẻ bài viết - AutoPost Pro</title>
+    <meta name="description" content="Chia sẻ bài viết từ Fanpage Facebook tự động lên hàng loạt hội nhóm với AutoPost Pro." />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <!-- React & Babel for JSX -->
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
+
+    <!-- Google Identity Services (for Google Sign-In) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2563EB",
+                        "primary-hover": "#1D4ED8",
+                        "background-light": "#F3F4F6",
+                        "background-dark": "#101622",
+                        "card-light": "#ffffff",
+                        "border-light": "#E5E7EB",
+                        "text-main": "#111827",
+                        "text-secondary": "#6B7280",
+                        "text-tertiary": "#9CA3AF",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "4xl": "2rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                        "soft": "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
+                        "card": "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)",
+                        "glow": "0 0 15px -3px rgba(37, 99, 235, 0.3)",
+                        "input": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                    },
+                    fontSize: {
+                        "xxs": ["0.65rem", { lineHeight: "0.9rem" }],
+                    },
+                    animation: {
+                        "ping-slow": "ping 3s cubic-bezier(0, 0, 0.2, 1) infinite",
+                        "shimmer": "shimmer 2s infinite",
+                        "slide-in-right": "slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                        "shrink": "shrink 3s linear forwards",
+                    },
+                    keyframes: {
+                        shimmer: {
+                            "0%": { transform: "translateX(-100%)" },
+                            "100%": { transform: "translateX(100%)" }
+                        },
+                        slideInRight: {
+                            "0%": { transform: "translateX(100%)", opacity: "0" },
+                            "100%": { transform: "translateX(0)", opacity: "1" }
+                        },
+                        shrink: {
+                            "0%": { width: "100%" },
+                            "100%": { width: "0%" }
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/style.css" />
+
+    <!-- Error Handler -->
+    <script>
+        window.onerror = function (msg, url, lineNo) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '0';
+            errorDiv.style.left = '0';
+            errorDiv.style.width = '100%';
+            errorDiv.style.background = '#fee2e2';
+            errorDiv.style.color = '#b91c1c';
+            errorDiv.style.padding = '20px';
+            errorDiv.style.zIndex = '9999';
+            errorDiv.style.fontFamily = 'monospace';
+            errorDiv.innerHTML = '<strong>Error:</strong> ' + msg + '<br><strong>Line:</strong> ' + lineNo;
+            document.body.appendChild(errorDiv);
+            return false;
+        };
+    </script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main antialiased transition-colors duration-300">
+    <!-- React Root -->
+    <div id="root"></div>
+
+    <!-- Shared AutoPost Pro Application -->
+    <script type="text/babel" data-presets="env,react" src="/app.jsx"></script>
+</body>
+
+</html>

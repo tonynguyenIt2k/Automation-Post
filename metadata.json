@@ -1,0 +1,6 @@
+{
+  "name": "AutoPost Pro",
+  "description": "Công cụ tự động đăng bài và chia sẻ bài viết lên nhiều nhóm Facebook tích hợp AI Gemini viết lại nội dung chống spam.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
