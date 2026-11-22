@@ -10,7 +10,7 @@ export const SUPPORTED_GEMINI_MODELS = [
 
 export type SupportedGeminiModel = (typeof SUPPORTED_GEMINI_MODELS)[number];
 
-export const DEFAULT_GEMINI_MODEL: SupportedGeminiModel = 'gemini-4-hydrogen';
+export const DEFAULT_GEMINI_MODEL: SupportedGeminiModel = 'gemini-3.1-flash-lite';
 
 /**
  * Resolves a requested model ID to an active, supported Gemini model.

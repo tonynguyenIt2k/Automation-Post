@@ -1,9 +1,143 @@
-import { GoogleGenAI } from '@google/genai';
-import {
-  resolveGeminiModel,
-  cleanAiRewriteOutput,
-  formatSalesContent,
-} from '../src/utils/autopost.js';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+
+type SupportedGeminiModel = 'gemini-4-hydrogen' | 'gemini-3.1-flash-lite';
+const DEFAULT_GEMINI_MODEL: SupportedGeminiModel = 'gemini-3.1-flash-lite';
+
+function resolveGeminiModel(requested?: string | null): SupportedGeminiModel {
+  if (!requested || typeof requested !== 'string') {
+    return DEFAULT_GEMINI_MODEL;
+  }
+  const normalized = requested.trim().toLowerCase();
+  if (normalized === 'gemini-3.1-flash-lite') {
+    return 'gemini-3.1-flash-lite';
+  }
+  if (normalized === 'gemini-4-hydrogen') {
+    return 'gemini-4-hydrogen';
+  }
+  return DEFAULT_GEMINI_MODEL;
+}
+
+const BULLET_LEAD_EMOJI_PATTERN =
+  '(?:✨|⚡|🔥|💥|🎯|✅|✔️|☑️|👉|📌|📍|📞|☎️|📲|💬|💰|💵|🎁|🎉|🏷️|⭐|🌟|💎|🚀|🛡️|🎓|♻️|💳|🖥️|💻|📱|⏰|🕒|🏪|🏠|🚚|📦|❤️|🔹|🔸|▪️|•|📢|🔔|💡|🏆)';
+const PRICING_EMOJI_RE = /^(?:💰|💵|🎁|🏷️|💳|🎓|♻️)/u;
+const CONTACT_EMOJI_RE = /^(?:📍|📌|👉|🏪|🏠|📞|☎️|📲|⏰|🕒)/u;
+
+function formatSalesContent(text: string): string {
+  if (!text) return '';
+  let normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\u00A0/g, ' ');
+  normalized = normalized.replace(/([^\s#\n])(#[\p{L}\p{N}_]+)/gu, '$1\n\n$2');
+  const pipeBulletRe = new RegExp(`\\s*\\|\\s*(?=${BULLET_LEAD_EMOJI_PATTERN}\\s+\\S)`, 'gu');
+  normalized = normalized.replace(pipeBulletRe, '\n');
+  const inlineBulletRe = new RegExp(
+    `([^\\n])\\s*(${BULLET_LEAD_EMOJI_PATTERN}(?=\\s+[^\\s\\n]))`,
+    'gu',
+  );
+  normalized = normalized
+    .split('\n')
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || /^#[\p{L}\p{N}_]/u.test(trimmed)) return trimmed;
+      return trimmed.replace(inlineBulletRe, '$1\n$2');
+    })
+    .join('\n');
+
+  const rawLines = normalized.split('\n').map((l) => l.replace(/[ \t]{2,}/g, ' ').trim());
+  const out: string[] = [];
+
+  const getSectionType = (line: string): 'empty' | 'hashtag' | 'contact' | 'pricing' | 'body' => {
+    if (!line) return 'empty';
+    if (/^#[\p{L}\p{N}_]/u.test(line)) return 'hashtag';
+    if (CONTACT_EMOJI_RE.test(line)) return 'contact';
+    if (PRICING_EMOJI_RE.test(line)) return 'pricing';
+    return 'body';
+  };
+
+  let prevNonEmptyType: 'headline' | 'hashtag' | 'contact' | 'pricing' | 'body' | null = null;
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    if (!line) {
+      if (out.length > 0 && out[out.length - 1] !== '') out.push('');
+      continue;
+    }
+    const currentType: 'headline' | 'empty' | 'hashtag' | 'contact' | 'pricing' | 'body' =
+      prevNonEmptyType === null ? 'headline' : getSectionType(line);
+    const hasLeadingBlank = out.length > 0 && out[out.length - 1] === '';
+    if (prevNonEmptyType !== null && !hasLeadingBlank) {
+      const shouldAddBlank =
+        prevNonEmptyType === 'headline' ||
+        currentType === 'hashtag' ||
+        (currentType === 'pricing' && prevNonEmptyType !== 'pricing') ||
+        (currentType === 'contact' && prevNonEmptyType !== 'contact');
+      if (shouldAddBlank) out.push('');
+    }
+    out.push(line);
+    prevNonEmptyType = currentType === 'empty' ? prevNonEmptyType : currentType;
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function cleanAiRewriteOutput(rawText: string): string {
+  if (!rawText || !rawText.trim()) return '';
+  let allLines = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').map((l) => l.trim());
+  let lastHashIdx = -1;
+  for (let i = allLines.length - 1; i >= 0; i--) {
+    if (/^#[\p{L}\p{N}_]/u.test(allLines[i])) {
+      lastHashIdx = i;
+      break;
+    }
+  }
+  if (lastHashIdx !== -1 && lastHashIdx < allLines.length - 1) {
+    const trailingText = allLines
+      .slice(lastHashIdx + 1)
+      .join(' ')
+      .replace(/^[}\s\-*]+/, '')
+      .trim();
+    if (!trailingText || /^(note|check|total|wait|final|ghi chú|lưu ý)/i.test(trailingText)) {
+      allLines = allLines.slice(0, lastHashIdx + 1);
+    }
+  }
+
+  let cutTopIdx = -1;
+  for (let i = 0; i < Math.min(allLines.length, 6); i++) {
+    const lower = allLines[i].toLowerCase();
+    if (
+      /^(final version|final draft|final attempt|text:|output:|bài viết:|here is|dưới đây là|let's try this|revised)/.test(
+        lower,
+      ) ||
+      lower.includes('construction:')
+    ) {
+      cutTopIdx = i;
+    }
+  }
+  if (cutTopIdx !== -1) allLines = allLines.slice(cutTopIdx + 1);
+
+  const badLineRegex =
+    /^(emoji count|constraint check|final check|one more check|original content|target audience|tone requested|word count|word check|```)/i;
+  const bannedStartRegex = /^(Total|Wait|Perfect|I will|I should|Insight|Checklist)\b/i;
+  const selfCheckRegex = /\?\s*(Yes|No)\b/i;
+  const draftLabelRegex = /^(Headline|Body|Bullet points|CTA|Hashtags):\s*/i;
+
+  const lines = allLines
+    .filter((l) => !badLineRegex.test(l))
+    .filter((l) => !bannedStartRegex.test(l))
+    .filter((l) => !selfCheckRegex.test(l))
+    .map((l) =>
+      l
+        .replace(draftLabelRegex, '')
+        .replace(/\{CONTENT\}/gi, '')
+        .replace(/```[a-z]*$/gi, '')
+        .replace(/[`*]/g, '')
+        .trim(),
+    );
+
+  while (lines.length > 0 && lines[0] === '') lines.shift();
+  while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+  if (lines.length > 0 && lines[0].startsWith('{')) lines[0] = lines[0].replace(/^\{+\s*/, '');
+  if (lines.length > 0 && lines[lines.length - 1].endsWith('}')) {
+    lines[lines.length - 1] = lines[lines.length - 1].replace(/\s*\}+$/, '');
+  }
+  return formatSalesContent(lines.join('\n'));
+}
 
 export interface CopywritingAngle {
   id: string;
@@ -95,7 +229,12 @@ function selectAngle(variationIndex?: number): CopywritingAngle {
 }
 
 export function createGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.API_KEY ||
+    ''
+  ).trim();
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
     return null;
   }
@@ -109,10 +248,35 @@ export function createGeminiClient(): GoogleGenAI | null {
   });
 }
 
+function formatGeminiError(err: unknown): { status: number; message: string } {
+  const raw = err instanceof Error ? err.message : String(err || 'Lỗi kết nối Gemini AI');
+  if (/API_KEY_INVALID|PERMISSION_DENIED|403|401|unauthenticated/i.test(raw)) {
+    return {
+      status: 403,
+      message:
+        'GEMINI_API_KEY không hợp lệ hoặc không có quyền gọi model. Vui lòng kiểm tra lại biến môi trường GEMINI_API_KEY trên Vercel rồi Redeploy.',
+    };
+  }
+  if (/RESOURCE_EXHAUSTED|429|quota/i.test(raw)) {
+    return {
+      status: 429,
+      message:
+        'GEMINI_API_KEY đang chạm giới hạn tốc độ / hạn mức (429). Vui lòng chờ vài giây rồi thử lại hoặc dùng API key có billing.',
+    };
+  }
+  if (/timed out/i.test(raw)) {
+    return {
+      status: 504,
+      message: 'Gemini AI phản hồi quá thời gian chờ. Vui lòng thử lại hoặc chuyển sang model Gemini 3.1 Flash Lite.',
+    };
+  }
+  return { status: 502, message: raw };
+}
+
 async function generateWithTimeout(
   ai: GoogleGenAI,
   params: Parameters<GoogleGenAI['models']['generateContent']>[0],
-  timeoutMs = 20000,
+  timeoutMs = 12000,
 ) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -135,21 +299,19 @@ export async function generateWithFallback(
   seed?: number,
 ) {
   const primary = resolveGeminiModel(requestedModel);
-  const candidates =
+  const candidates: SupportedGeminiModel[] =
     primary === 'gemini-3.1-flash-lite'
-      ? (['gemini-3.1-flash-lite'] as const)
-      : ([primary, 'gemini-3.1-flash-lite'] as const);
+      ? ['gemini-3.1-flash-lite', 'gemini-4-hydrogen']
+      : ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
 
   let lastErr: unknown = null;
   for (const candidate of candidates) {
     try {
-      const config: { systemInstruction?: string; seed?: number } = {};
+      const config: Record<string, unknown> = {};
       if (systemInstruction) config.systemInstruction = systemInstruction;
-      if (
-        candidate !== 'gemini-4-hydrogen' &&
-        typeof seed === 'number' &&
-        Number.isFinite(seed)
-      ) {
+      if (candidate === 'gemini-4-hydrogen') {
+        config.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+      } else if (typeof seed === 'number' && Number.isFinite(seed)) {
         config.seed = Math.abs(Math.floor(seed));
       }
 
@@ -160,15 +322,17 @@ export async function generateWithFallback(
           contents,
           ...(Object.keys(config).length > 0 ? { config } : {}),
         },
-        candidate === 'gemini-4-hydrogen' ? 14000 : 22000,
+        candidate === 'gemini-4-hydrogen' ? 5500 : 10000,
       );
       return { response, usedModel: candidate };
     } catch (err) {
       lastErr = err;
-      console.warn(
-        `[Gemini] Model ${candidate} failed/timed out, trying fallback if available:`,
-        err instanceof Error ? err.message : err,
-      );
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[Gemini] Model ${candidate} failed/timed out, trying fallback:`, msg);
+      // Do not waste timeout retrying another model on invalid API key
+      if (/API_KEY_INVALID/i.test(msg)) {
+        break;
+      }
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error('Không thể kết nối Gemini AI');
@@ -216,7 +380,7 @@ export async function rewritePostWithGemini(params: {
       ok: false,
       status: 503,
       error:
-        'Chưa cấu hình GEMINI_API_KEY trên máy chủ. Vui lòng thiết lập biến môi trường GEMINI_API_KEY.',
+        'Chưa cấu hình GEMINI_API_KEY trên máy chủ Vercel. Vào Vercel → Project Settings → Environment Variables, thêm GEMINI_API_KEY rồi Redeploy.',
     };
   }
 
@@ -301,13 +465,22 @@ NGUYÊN TẮC BẮT BUỘC:
   const variationSeed =
     ((parsedVarIndex ?? Math.floor(Math.random() * 50)) + 1) * 1009 + (Date.now() % 100000);
 
-  const { response, usedModel } = await generateWithFallback(
-    ai,
-    typeof model === 'string' ? model : undefined,
-    finalPrompt,
-    systemInstruction,
-    variationSeed,
-  );
+  let response;
+  let usedModel: SupportedGeminiModel;
+  try {
+    const out = await generateWithFallback(
+      ai,
+      typeof model === 'string' ? model : undefined,
+      finalPrompt,
+      systemInstruction,
+      variationSeed,
+    );
+    response = out.response;
+    usedModel = out.usedModel;
+  } catch (err) {
+    const formatted = formatGeminiError(err);
+    return { ok: false, status: formatted.status, error: formatted.message };
+  }
 
   const rawText = response.text ?? '';
   if (!rawText.trim()) {
@@ -335,22 +508,28 @@ export async function testGeminiConnection(requestedModel?: unknown): Promise<
     return {
       ok: false,
       status: 503,
-      error: 'Chưa cấu hình GEMINI_API_KEY trên máy chủ.',
+      error:
+        'Chưa cấu hình GEMINI_API_KEY trên máy chủ Vercel. Vào Vercel → Project Settings → Environment Variables, thêm GEMINI_API_KEY rồi Redeploy.',
     };
   }
 
   const start = Date.now();
-  const { response, usedModel } = await generateWithFallback(
-    ai,
-    typeof requestedModel === 'string' ? requestedModel : undefined,
-    'Trả lời đúng 2 từ: Sẵn sàng.',
-  );
-  const latencyMs = Date.now() - start;
+  try {
+    const { response, usedModel } = await generateWithFallback(
+      ai,
+      typeof requestedModel === 'string' ? requestedModel : undefined,
+      'Trả lời đúng 2 từ: Sẵn sàng.',
+    );
+    const latencyMs = Date.now() - start;
 
-  return {
-    ok: true,
-    model: usedModel,
-    latencyMs,
-    reply: (response.text ?? 'Sẵn sàng').trim(),
-  };
+    return {
+      ok: true,
+      model: usedModel,
+      latencyMs,
+      reply: (response.text ?? 'Sẵn sàng').trim(),
+    };
+  } catch (err) {
+    const formatted = formatGeminiError(err);
+    return { ok: false, status: formatted.status, error: formatted.message };
+  }
 }

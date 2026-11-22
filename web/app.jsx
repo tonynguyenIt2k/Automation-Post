@@ -692,12 +692,12 @@
                             <label htmlFor="gemini-model-select" className="text-xs font-semibold text-text-secondary mb-1.5">{t('model')}</label>
                             <select
                                 id="gemini-model-select"
-                                value={['gemini-4-hydrogen', 'gemini-3.1-flash-lite'].includes(model) ? model : 'gemini-4-hydrogen'}
+                                value={['gemini-4-hydrogen', 'gemini-3.1-flash-lite'].includes(model) ? model : 'gemini-3.1-flash-lite'}
                                 onChange={e => setModel(e.target.value)}
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-border-light dark:border-slate-700 rounded-xl text-xs font-medium text-text-main dark:text-gray-200 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none cursor-pointer"
                             >
-                                <option value="gemini-4-hydrogen">Gemini 4 Hydrogen (Cân bằng tốc độ &amp; chất lượng)</option>
-                                <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (Siêu nhanh &amp; tiết kiệm)</option>
+                                <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (Khuyên dùng trên Vercel · Siêu nhanh)</option>
+                                <option value="gemini-4-hydrogen">Gemini 4 Hydrogen (Cân bằng chất lượng)</option>
                             </select>
                         </div>
 
@@ -765,12 +765,17 @@
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ model })
                                     });
-                                    const data = await res.json();
+                                    const rawText = await res.text();
+                                    let data = {};
+                                    try { data = rawText ? JSON.parse(rawText) : {}; } catch (_) {}
                                     if (res.ok && data.ok) {
                                         addLog('success', `✅ Kết nối Gemini AI sẵn sàng! (${data.model} - ${data.latencyMs}ms)`);
                                         showToast(`Kết nối Gemini AI thành công (${data.latencyMs}ms)!`, 'success');
                                     } else {
-                                        throw new Error(data.error || 'Không thể kết nối tới dịch vụ AI');
+                                        const fallbackErr = res.status === 504
+                                            ? 'Máy chủ Vercel hết thời gian chờ (504). Hãy thử chọn Gemini 3.1 Flash Lite.'
+                                            : (rawText && !rawText.trim().startsWith('<') ? rawText.trim().slice(0, 180) : `Lỗi máy chủ (HTTP ${res.status})`);
+                                        throw new Error(data.error || fallbackErr);
                                     }
                                 } catch (e) {
                                     addLog('error', `❌ Lỗi kết nối AI: ${e.message}`);
@@ -833,8 +838,8 @@
             const [safeDelayMax, setSafeDelayMax] = useState(() => storage.get('fb_delay_max', 120));
             const [postMode, setPostMode] = useState(() => storage.get('fb_post_mode', 'desktop'));
             const [model, setModel] = useState(() => {
-                const saved = storage.get('gemini_model', 'gemini-4-hydrogen');
-                return ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'].includes(saved) ? saved : 'gemini-4-hydrogen';
+                const saved = storage.get('gemini_model', 'gemini-3.1-flash-lite');
+                return ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'].includes(saved) ? saved : 'gemini-3.1-flash-lite';
             });
             const [previewMode, setPreviewMode] = useState(() => {
                 const params = new URLSearchParams(window.location.search);
@@ -1420,11 +1425,11 @@ Input:
                     setCustomPrompt(defaultPrompt);
                 }
 
-                // Migrate legacy/deprecated model selections to active Gemini 4 Hydrogen
+                // Migrate legacy/deprecated model selections to fast Gemini 3.1 Flash Lite
                 const savedModel = storage.get('gemini_model', '');
                 if (!savedModel || !['gemini-4-hydrogen', 'gemini-3.1-flash-lite'].includes(savedModel)) {
-                    storage.set('gemini_model', 'gemini-4-hydrogen');
-                    setModel('gemini-4-hydrogen');
+                    storage.set('gemini_model', 'gemini-3.1-flash-lite');
+                    setModel('gemini-3.1-flash-lite');
                 }
             }, []);
 
@@ -2719,17 +2724,13 @@ Input:
                     avoidOpenings = []
                 } = opts;
 
-                try {
-                    const varBadge = typeof variationIndex === 'number'
-                        ? ` · Biến thể #${variationIndex + 1}${totalVariations ? `/${totalVariations}` : ''}`
-                        : '';
-                    addLog('info', `🤖 Gọi Gemini AI (${model}${varBadge}) cho "${groupName || 'bài viết'}"...`);
+                const callRewriteApi = async (requestedModel) => {
                     const response = await fetch('/api/gemini/rewrite', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             content: text,
-                            model: model,
+                            model: requestedModel,
                             customPrompt: customPrompt,
                             groupName: groupName,
                             variationIndex: variationIndex,
@@ -2739,10 +2740,38 @@ Input:
                         })
                     });
 
-                    const data = await response.json().catch(() => ({}));
+                    const rawText = await response.text();
+                    let data = {};
+                    try { data = rawText ? JSON.parse(rawText) : {}; } catch (_) {}
+
                     if (!response.ok) {
-                        const msg = data.error || `HTTP ${response.status}`;
-                        throw new Error(msg);
+                        const fallbackMsg = response.status === 504
+                            ? 'Máy chủ Vercel phản hồi quá thời gian chờ (504).'
+                            : (rawText && !rawText.trim().startsWith('<') ? rawText.trim().slice(0, 180) : `HTTP ${response.status}`);
+                        const err = new Error(data.error || fallbackMsg);
+                        err.status = response.status;
+                        throw err;
+                    }
+                    return data;
+                };
+
+                try {
+                    const varBadge = typeof variationIndex === 'number'
+                        ? ` · Biến thể #${variationIndex + 1}${totalVariations ? `/${totalVariations}` : ''}`
+                        : '';
+                    addLog('info', `🤖 Gọi Gemini AI (${model}${varBadge}) cho "${groupName || 'bài viết'}"...`);
+
+                    let data;
+                    try {
+                        data = await callRewriteApi(model);
+                    } catch (firstErr) {
+                        const isTimeoutOrTransient = firstErr?.status === 504 || firstErr?.status === 502 || /timed out|504|network/i.test(firstErr?.message || '');
+                        if (isTimeoutOrTransient && model !== 'gemini-3.1-flash-lite') {
+                            addLog('info', `⚡ Model ${model} phản hồi chậm, tự động thử nhanh bằng gemini-3.1-flash-lite...`);
+                            data = await callRewriteApi('gemini-3.1-flash-lite');
+                        } else {
+                            throw firstErr;
+                        }
                     }
 
                     const result = (data.rewritten || data.text || '').trim();

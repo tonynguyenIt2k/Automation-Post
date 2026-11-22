@@ -1,4 +1,21 @@
-import { calculateSubscriptionExpiry } from '../src/utils/autopost.js';
+function calculateSubscriptionExpiry(
+  currentExpiresAt: string | null | undefined,
+  rawMonths: number | string,
+  now: Date = new Date(),
+): string {
+  const parsed = parseInt(String(rawMonths), 10);
+  const months = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 36) : 1;
+  let baseDate = new Date(now.getTime());
+  if (currentExpiresAt) {
+    const existing = new Date(currentExpiresAt);
+    if (!Number.isNaN(existing.getTime()) && existing.getTime() > now.getTime()) {
+      baseDate = existing;
+    }
+  }
+  const next = new Date(baseDate.getTime());
+  next.setMonth(next.getMonth() + months);
+  return next.toISOString();
+}
 
 export interface SubscriptionHistoryEntry {
   id: number;
