@@ -196,18 +196,57 @@ export const COPYWRITING_ANGLES: CopywritingAngle[] = [
   },
 ];
 
+export const STORYTELLING_ANGLES: CopywritingAngle[] = [
+  {
+    id: 'warm_memory',
+    label: 'Cảm xúc & ký ức gần gũi',
+    instruction:
+      'Giữ trọn mạch cảm xúc dịu nhẹ, hoài niệm và gần gũi như một dòng chia sẻ đời thường. Diễn đạt lại bằng câu chữ mới tự nhiên, chân thật, không mang giọng quảng cáo bán hàng.',
+  },
+  {
+    id: 'small_detail',
+    label: 'Chi tiết nhỏ tạo ấn tượng',
+    instruction:
+      'Làm nổi bật những chi tiết nhỏ tinh tế có trong bài gốc (như cảm giác cầm nắm, ánh nhìn, dấu ấn riêng quen thuộc) bằng cách kể mới mẻ, mềm mại và dễ đồng cảm.',
+  },
+  {
+    id: 'everyday_story',
+    label: 'Chuyện thường ngày tự nhiên',
+    instruction:
+      'Kể lại như một mẩu chuyện nhỏ đời thường vừa trải qua hôm nay, câu chữ giản dị, nhịp văn thoáng, giữ nguyên tinh thần và hình ảnh có trong bài gốc.',
+  },
+  {
+    id: 'gentle_reflection',
+    label: 'Góc nhìn tinh tế & sâu lắng',
+    instruction:
+      'Mở đầu bằng một cảm nhận nhẹ nhàng về khoảnh khắc quen thuộc trong bài gốc, rồi dẫn tự nhiên qua từng ý với giọng văn ấm áp, không thêm thông tin mua bán hay liên hệ.',
+  },
+  {
+    id: 'friend_chat',
+    label: 'Tâm sự nhẹ với bạn bè',
+    instruction:
+      'Viết tự nhiên như đang kể chuyện vui cùng bạn bè trong hội nhóm, thân mật, gần gũi, đổi cách đặt câu và bộ emoji khác biệt để tránh trùng lặp.',
+  },
+  {
+    id: 'minimal_aesthetic',
+    label: 'Ngắn gọn & giàu hình ảnh',
+    instruction:
+      'Trình bày từng ý ngắn gọn, giàu hình ảnh đời thường, dễ đọc nhanh trên Facebook mà vẫn giữ nguyên cảm xúc và ý chính của bài gốc.',
+  },
+];
+
 export type WritingStyleId = 'auto' | 'professional' | 'friendly' | 'promo' | 'concise';
 
 const WRITING_STYLE_INSTRUCTIONS: Record<WritingStyleId, string> = {
-  auto: 'Giọng văn marketing Facebook chuyên nghiệp, tự nhiên, linh hoạt thay đổi sắc thái theo từng góc tiếp cận để mỗi nhóm có một bài đăng hoàn toàn riêng biệt, không trùng lặp công thức.',
+  auto: 'Giọng văn Facebook tự nhiên, chuyên nghiệp, linh hoạt thay đổi sắc thái theo đúng thể loại bài gốc (bài bán hàng hay bài chia sẻ/kể chuyện) để mỗi nhóm có một bài đăng khác biệt hoàn toàn.',
   professional:
-    'Giọng văn CHUYÊN NGHIỆP & CAO CẤP: từ ngữ chọn lọc, tinh tế, khẳng định giá trị và uy tín thương hiệu, hạn chế từ ngữ suồng sã, bố cục sắc nét.',
+    'Giọng văn CHUYÊN NGHIỆP & TINH TẾ: từ ngữ chọn lọc, mạch lạc, hạn chế từ ngữ suồng sã, bố cục sắc nét.',
   friendly:
-    'Giọng văn THÂN THIỆN CỘNG ĐỒNG: gần gũi, dễ mến như chia sẻ trong hội nhóm cư dân/người dùng thực tế, tạo thiện cảm tự nhiên và khuyến khích bình luận/nhắn tin.',
+    'Giọng văn THÂN THIỆN CỘNG ĐỒNG: gần gũi, dễ mến như chia sẻ tự nhiên trong hội nhóm thực tế, tạo thiện cảm.',
   promo:
-    'Giọng văn CHỐT ĐƠN & ƯU ĐÃI MẠNH: nhấn rõ lợi ích tài chính, quyền lợi đi kèm và lời kêu gọi hành động thuyết phục nhưng vẫn lịch sự, đáng tin cậy (không giật tít rẻ tiền).',
+    'Giọng văn NỔI BẬT GIÁ TRỊ: nhấn rõ điểm thu hút có trong bài gốc và lời gợi mở tương tác tự nhiên (không tự bịa ưu đãi hay số liên hệ nếu bài gốc không có).',
   concise:
-    'Giọng văn NGẮN GỌN SÚC TÍCH: cô đọng tối đa, mỗi ý tối đa 1 dòng ngắn dễ quét mắt trên điện thoại trong 5 giây, không rườm rà nhưng vẫn đủ 100% thông tin quan trọng.',
+    'Giọng văn NGẮN GỌN SÚC TÍCH: cô đọng tối đa, mỗi ý tối đa 1 dòng ngắn dễ quét mắt trên điện thoại, giữ đủ 100% ý chính bài gốc.',
 };
 
 function normalizeWritingStyle(value: unknown): WritingStyleId {
@@ -220,12 +259,164 @@ function normalizeWritingStyle(value: unknown): WritingStyleId {
   return 'auto';
 }
 
-function selectAngle(variationIndex?: number): CopywritingAngle {
-  if (typeof variationIndex === 'number' && Number.isFinite(variationIndex) && variationIndex >= 0) {
-    return COPYWRITING_ANGLES[Math.floor(variationIndex) % COPYWRITING_ANGLES.length];
+interface SourceFactProfile {
+  phoneDigits: Set<string>;
+  hasZalo: boolean;
+  hasHotline: boolean;
+  hasPrice: boolean;
+  hasAddress: boolean;
+  hasHashtags: boolean;
+  hasUrls: boolean;
+  isStorytelling: boolean;
+}
+
+const PHONE_LIKE_RE =
+  /(?:(?:\+?84|0)\s*[\d.\-\s]{7,13}\d|(?:\+?84|0)\d{1,3}[\s.\-]*[xX*]{3,}[\d.\-\sxX*]*|(?:1800|1900)[\s.\-]*\d{4,6})/g;
+const URL_LIKE_RE = /\b(?:https?:\/\/|www\.)[^\s]+/gi;
+
+function extractPhoneDigits(text: string): Set<string> {
+  const digits = new Set<string>();
+  const matches = text.match(PHONE_LIKE_RE) || [];
+  for (const m of matches) {
+    const clean = m.replace(/\D/g, '');
+    if (clean.length >= 8 && clean.length <= 12) {
+      digits.add(clean);
+      if (clean.startsWith('84') && clean.length >= 10) {
+        digits.add('0' + clean.slice(2));
+      }
+    }
   }
-  const randomIdx = Math.floor(Math.random() * COPYWRITING_ANGLES.length);
-  return COPYWRITING_ANGLES[randomIdx];
+  return digits;
+}
+
+function analyzeSourceFacts(sourceText: string): SourceFactProfile {
+  const phoneDigits = extractPhoneDigits(sourceText);
+  const hasZalo = /\bzalo\b/i.test(sourceText);
+  const hasHotline = /\b(hotline|sđt|sdt|điện thoại|liên hệ|call|tel|inbox|nhắn tin)\b/i.test(sourceText);
+  const hasPrice =
+    /(\d+[\.,]?\d*\s*(k\b|đ\b|vnđ|vnd|tr\b|triệu|nghìn|ngàn|%|₫)|\b(giá bán|ưu đãi|trả góp|khuyến mãi|giảm giá|sale|voucher)\b)/i.test(
+      sourceText,
+    );
+  const hasAddress =
+    /\b(địa chỉ|số\s+\d+\s+[a-zA-ZÀ-ỹ]|đường\s+[a-zA-ZÀ-ỹ]|phường\s+|quận\s+|huyện\s+|cơ sở\s+\d|chi nhánh|showroom|giờ mở cửa|mở cửa\s+\d)/i.test(
+      sourceText,
+    );
+  const hasHashtags = /#[\p{L}\p{N}_]+/u.test(sourceText);
+  const hasUrls = URL_LIKE_RE.test(sourceText);
+  URL_LIKE_RE.lastIndex = 0;
+
+  const isStorytelling =
+    phoneDigits.size === 0 && !hasZalo && !hasHotline && !hasPrice && !hasAddress;
+
+  return {
+    phoneDigits,
+    hasZalo,
+    hasHotline,
+    hasPrice,
+    hasAddress,
+    hasHashtags,
+    hasUrls,
+    isStorytelling,
+  };
+}
+
+/**
+ * Deterministic safety net: guarantees the rewritten post NEVER contains fabricated
+ * phone numbers, Zalo numbers, hotline placeholders, or URLs that did not exist in sourceText.
+ */
+function stripHallucinatedContacts(rewrittenText: string, sourceText: string, facts: SourceFactProfile): string {
+  if (!rewrittenText) return '';
+  const sourceLower = sourceText.toLowerCase();
+
+  const lines = rewrittenText.split('\n');
+  const kept: string[] = [];
+
+  const contactLabelRe =
+    /(hotline|zalo|sđt|sdt|số điện thoại|điện thoại|liên hệ|call|tel|tư vấn đặt in|đặt hàng ngay|inbox|ib ngay|địa chỉ\s*:|giờ mở cửa\s*:)/i;
+  const placeholderRe = /(\[[^\]]*(sđt|sdt|số|zalo|hotline|địa chỉ|link|tên)[^\]]*\]|0\d{1,3}[\s.\-]*[xX*]{3,}|x{4,})/i;
+
+  for (const rawLine of lines) {
+    let line = rawLine;
+
+    // 1. Check phone-like patterns in this line
+    const phoneMatches = line.match(PHONE_LIKE_RE) || [];
+    let hasFabricatedPhone = false;
+    for (const m of phoneMatches) {
+      const cleanDigits = m.replace(/\D/g, '');
+      const hasMask = /[xX*]/.test(m);
+      const isAllowed =
+        !hasMask &&
+        cleanDigits.length >= 8 &&
+        (facts.phoneDigits.has(cleanDigits) ||
+          (cleanDigits.startsWith('84') && facts.phoneDigits.has('0' + cleanDigits.slice(2))));
+      if (!isAllowed) {
+        hasFabricatedPhone = true;
+      }
+    }
+
+    if (hasFabricatedPhone) {
+      // Drop the entire line if it's a contact/CTA line or if source has no phones at all
+      if (facts.phoneDigits.size === 0 || contactLabelRe.test(line)) {
+        continue;
+      }
+      // Otherwise strip only the fabricated number
+      line = line.replace(PHONE_LIKE_RE, (m) => {
+        const cleanDigits = m.replace(/\D/g, '');
+        if (!/[xX*]/.test(m) && facts.phoneDigits.has(cleanDigits)) return m;
+        return '';
+      });
+    }
+
+    // 2. Drop lines introducing Zalo / Hotline / SĐT / Placeholder contacts when absent in source
+    if (
+      facts.phoneDigits.size === 0 &&
+      !facts.hasZalo &&
+      /\b(zalo|hotline|sđt|sdt|số điện thoại)\b/i.test(line)
+    ) {
+      continue;
+    }
+
+    if (placeholderRe.test(line) && !placeholderRe.test(sourceText)) {
+      continue;
+    }
+
+    // 3. Drop lines introducing fabricated Address / Opening hours when absent in source
+    if (!facts.hasAddress && /^\s*[^\w\p{L}]*\s*(địa chỉ|giờ mở cửa|thời gian phục vụ|showroom|cơ sở)\s*:/iu.test(line)) {
+      continue;
+    }
+
+    // 4. Strip fabricated URLs not in source
+    if (!facts.hasUrls && URL_LIKE_RE.test(line)) {
+      URL_LIKE_RE.lastIndex = 0;
+      const lineUrls = line.match(URL_LIKE_RE) || [];
+      const hasFakeUrl = lineUrls.some((u) => !sourceLower.includes(u.toLowerCase()));
+      if (hasFakeUrl) {
+        if (contactLabelRe.test(line) || line.replace(URL_LIKE_RE, '').trim().length < 18) {
+          continue;
+        }
+        line = line.replace(URL_LIKE_RE, '').trim();
+      }
+    }
+    URL_LIKE_RE.lastIndex = 0;
+
+    // 5. Drop trailing pure-hashtag line if source had NO hashtags and is a storytelling post
+    if (facts.isStorytelling && !facts.hasHashtags && /^#[\p{L}\p{N}_]/u.test(line.trim())) {
+      continue;
+    }
+
+    kept.push(line);
+  }
+
+  return formatSalesContent(kept.join('\n'));
+}
+
+function selectAngle(variationIndex?: number, isStorytelling = false): CopywritingAngle {
+  const pool = isStorytelling ? STORYTELLING_ANGLES : COPYWRITING_ANGLES;
+  if (typeof variationIndex === 'number' && Number.isFinite(variationIndex) && variationIndex >= 0) {
+    return pool[Math.floor(variationIndex) % pool.length];
+  }
+  const randomIdx = Math.floor(Math.random() * pool.length);
+  return pool[randomIdx];
 }
 
 export function createGeminiClient(): GoogleGenAI | null {
@@ -291,6 +482,29 @@ async function generateWithTimeout(
   }
 }
 
+function extractResponseText(response: {
+  text?: string;
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: string; thought?: boolean }>;
+    };
+  }>;
+}): string {
+  const direct = typeof response?.text === 'string' ? response.text.trim() : '';
+  if (direct) return direct;
+
+  const parts = response?.candidates?.[0]?.content?.parts;
+  if (Array.isArray(parts)) {
+    const joined = parts
+      .filter((p) => p && !p.thought && typeof p.text === 'string')
+      .map((p) => p.text ?? '')
+      .join('')
+      .trim();
+    if (joined) return joined;
+  }
+  return '';
+}
+
 export async function generateWithFallback(
   ai: GoogleGenAI,
   requestedModel: string | undefined,
@@ -299,37 +513,59 @@ export async function generateWithFallback(
   seed?: number,
 ) {
   const primary = resolveGeminiModel(requestedModel);
-  const candidates: SupportedGeminiModel[] =
-    primary === 'gemini-3.1-flash-lite'
-      ? ['gemini-3.1-flash-lite', 'gemini-4-hydrogen']
-      : ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
+  const secondary: SupportedGeminiModel =
+    primary === 'gemini-3.1-flash-lite' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
+
+  const attempts: Array<{ model: SupportedGeminiModel; useSeed: boolean; timeoutMs: number }> = [
+    {
+      model: primary,
+      useSeed: primary !== 'gemini-4-hydrogen' && typeof seed === 'number' && Number.isFinite(seed),
+      timeoutMs: primary === 'gemini-4-hydrogen' ? 6000 : 10000,
+    },
+    ...(primary !== 'gemini-4-hydrogen' && typeof seed === 'number' && Number.isFinite(seed)
+      ? [{ model: primary, useSeed: false, timeoutMs: 8000 }]
+      : []),
+    {
+      model: secondary,
+      useSeed: false,
+      timeoutMs: secondary === 'gemini-4-hydrogen' ? 8000 : 10000,
+    },
+  ];
 
   let lastErr: unknown = null;
-  for (const candidate of candidates) {
+  for (const attempt of attempts) {
     try {
       const config: Record<string, unknown> = {};
       if (systemInstruction) config.systemInstruction = systemInstruction;
-      if (candidate === 'gemini-4-hydrogen') {
+      if (attempt.model === 'gemini-4-hydrogen') {
         config.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
-      } else if (typeof seed === 'number' && Number.isFinite(seed)) {
+      } else if (attempt.useSeed && typeof seed === 'number' && Number.isFinite(seed)) {
         config.seed = Math.abs(Math.floor(seed));
       }
 
       const response = await generateWithTimeout(
         ai,
         {
-          model: candidate,
+          model: attempt.model,
           contents,
           ...(Object.keys(config).length > 0 ? { config } : {}),
         },
-        candidate === 'gemini-4-hydrogen' ? 5500 : 10000,
+        attempt.timeoutMs,
       );
-      return { response, usedModel: candidate };
+
+      const text = extractResponseText(response);
+      if (!text) {
+        throw new Error(`Model ${attempt.model} returned empty text`);
+      }
+
+      return { response, text, usedModel: attempt.model };
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[Gemini] Model ${candidate} failed/timed out, trying fallback:`, msg);
-      // Do not waste timeout retrying another model on invalid API key
+      console.warn(
+        `[Gemini] Attempt (${attempt.model}, seed=${attempt.useSeed}) failed/empty, trying next:`,
+        msg,
+      );
       if (/API_KEY_INVALID/i.test(msg)) {
         break;
       }
@@ -393,7 +629,8 @@ export async function rewritePostWithGemini(params: {
       ? Math.floor(totalVariations)
       : undefined;
   const styleId = normalizeWritingStyle(writingStyle);
-  const angle = selectAngle(parsedVarIndex);
+  const facts = analyzeSourceFacts(content);
+  const angle = selectAngle(parsedVarIndex, facts.isStorytelling);
 
   const sanitizedAvoidOpenings = Array.isArray(avoidOpenings)
     ? avoidOpenings
@@ -405,25 +642,66 @@ export async function rewritePostWithGemini(params: {
   const cleanGroupName =
     typeof groupName === 'string' && groupName.trim() ? groupName.trim().slice(0, 120) : '';
 
-  const baseInstructions =
-    typeof customPrompt === 'string' && customPrompt.trim()
-      ? customPrompt.trim()
-      : `Nâng cấp và viết lại nội dung sau thành một bài đăng bán hàng Facebook CHUYÊN NGHIỆP, thuyết phục cao, tự nhiên như Copywriter thực thụ và trình bày cực kỳ thoáng mắt trên điện thoại:
-
-CẤU TRÚC CHUẨN 5 KHỐI (tách nhau bằng 1 dòng trống):
-1. Dòng mở đầu (Hook): 1 câu thu hút dừng lướt, tự nhiên, KHÔNG viết toàn bộ chữ IN HOA gây cảm giác spam.
-2. Khối giá trị & điểm nổi bật: 3–4 gạch đầu dòng súc tích chuyển tính năng thành lợi ích thực tế cho người dùng. MỖI ý dùng 1 emoji phù hợp ở đầu dòng và XUỐNG DÒNG RIÊNG.
-3. Khối giá bán & đặc quyền ưu đãi: tách thành đoạn riêng, mỗi quyền lợi (giá, trả góp, ưu đãi, thu cũ đổi mới...) nằm trên 1 dòng ngắn gọn, rõ ràng.
-4. Khối kêu gọi hành động (CTA) & liên hệ: lời mời tự nhiên kèm thông tin liên hệ có trong bài gốc (địa chỉ, giờ mở cửa, Hotline/Zalo — chỉ viết đúng những mục có trong bài gốc), tách dòng dễ bấm gọi/nhắn tin.
-5. Dòng cuối: cụm #Hashtag liên quan, tách riêng bằng 1 dòng trống phía trên.
+  const defaultInstructions = facts.isStorytelling
+    ? `Viết lại bài viết chia sẻ / kể chuyện sau thành một phiên bản MỚI MẺ, tự nhiên, giàu cảm xúc, trình bày thoáng mắt trên Facebook để chống trùng lặp khi đăng nhiều nhóm:
 
 NGUYÊN TẮC BẮT BUỘC:
-- GIỮ NGUYÊN 100% thông tin thực tế từ bài gốc (tên sản phẩm, thương hiệu, giá bán, khuyến mãi, địa chỉ, khung giờ, số điện thoại, Zalo). Tuyệt đối KHÔNG tự bịa thêm giờ mở cửa, địa chỉ, thông số hay ưu đãi không có trong bài gốc.
+- GIỮ NGUYÊN thể loại chia sẻ / kể chuyện gần gũi và 100% ý chính, bối cảnh, hình ảnh có trong bài gốc.
+- Đổi mới cách diễn đạt, câu mở đầu, nhịp câu và emoji cho tự nhiên, tránh lặp y nguyên câu chữ bài gốc.
+- TUYỆT ĐỐI KHÔNG biến bài viết thành bài rao bán hàng, KHÔNG tự bịa thêm số điện thoại, Zalo, Hotline, địa chỉ, giá bán, ưu đãi, lời mời đặt hàng hay #hashtag không có trong bài gốc.
+- KHÔNG dùng ký tự markdown (**in đậm**, *in nghiêng*, ###, \`\`\`).
+- KHÔNG thêm lời dẫn hay ghi chú ("Dưới đây là...", "Biến thể...", "Phiên bản...").
+- Chỉ trả về DUY NHẤT nội dung bài viết hoàn chỉnh bằng tiếng Việt.`
+    : `Nâng cấp và viết lại nội dung sau thành một bài đăng Facebook chuyên nghiệp, tự nhiên, mạch lạc và thoáng mắt trên điện thoại:
+
+BỐ CỤC LINH HOẠT (CHỈ đưa vào những mục CÓ THẬT trong bài gốc, tách đoạn bằng 1 dòng trống):
+- Mở đầu thu hút tự nhiên (KHÔNG viết toàn bộ chữ IN HOA gây cảm giác spam).
+- Các ý chính rõ ràng: mỗi ý dùng 1 emoji phù hợp ở đầu dòng và XUỐNG DÒNG RIÊNG.
+- Nếu bài gốc có giá bán / ưu đãi: giữ nguyên 100% con số và điều kiện thật.
+- Nếu bài gốc có thông tin liên hệ (địa chỉ, giờ mở cửa, Hotline/Zalo): giữ NGUYÊN VẸN đúng thông tin có trong bài gốc.
+- Nếu bài gốc có #Hashtag: giữ ở dòng cuối cùng, tách bằng 1 dòng trống phía trên.
+
+NGUYÊN TẮC BẮT BUỘC:
+- GIỮ NGUYÊN 100% thông tin thực tế từ bài gốc. Tuyệt đối KHÔNG tự bịa thêm số điện thoại, Zalo, Hotline, địa chỉ, giờ mở cửa, giá bán hay ưu đãi không có trong bài gốc.
 - KHÔNG dùng ký tự markdown (**in đậm**, *in nghiêng*, ###, \`\`\`).
 - KHÔNG thêm lời dẫn hay ghi chú kiểu "Dưới đây là...", "Biến thể...", "Phiên bản...".
 - Chỉ trả về DUY NHẤT nội dung bài viết hoàn chỉnh bằng tiếng Việt.`;
 
+  // If user still has the legacy 5-block sales default prompt saved while posting a storytelling post,
+  // prefer the storytelling-safe instructions so it never forces fake Hotline/Zalo blocks.
+  const rawCustomPrompt = typeof customPrompt === 'string' ? customPrompt.trim() : '';
+  const isLegacySalesPrompt =
+    rawCustomPrompt.includes('CẤU TRÚC CHUẨN 5 KHỐI') && rawCustomPrompt.includes('Hotline/Zalo');
+  const baseInstructions =
+    rawCustomPrompt && !(facts.isStorytelling && isLegacySalesPrompt)
+      ? rawCustomPrompt
+      : defaultInstructions;
+
+  const factGuards: string[] = ['[RÀNG BUỘC SỰ THẬT TỐI THƯỢNG — ƯU TIÊN CAO NHẤT]'];
+  if (facts.phoneDigits.size === 0) {
+    factGuards.push(
+      '- CẤM TUYỆT ĐỐI: Bài gốc KHÔNG CÓ số điện thoại, KHÔNG CÓ Hotline, KHÔNG CÓ Zalo. KHÔNG ĐƯỢC tự bịa hay thêm bất kỳ SĐT, Zalo, Hotline hay ký tự giữ chỗ (như 09xx, [SĐT], xxxx) nào!',
+    );
+  } else {
+    factGuards.push(
+      '- GIỮ NGUYÊN CHÍNH XÁC từng chữ số điện thoại/Zalo có trong bài gốc, không thay đổi hay thêm số khác.',
+    );
+  }
+  if (!facts.hasAddress) {
+    factGuards.push('- Bài gốc KHÔNG CÓ địa chỉ hay giờ mở cửa → KHÔNG tự bịa địa chỉ hay khung giờ.');
+  }
+  if (!facts.hasPrice) {
+    factGuards.push('- Bài gốc KHÔNG CÓ giá bán hay khuyến mãi → KHÔNG tự bịa giá, giảm giá hay trả góp.');
+  }
+  if (facts.isStorytelling) {
+    factGuards.push(
+      '- Bài gốc là bài chia sẻ / kể chuyện mềm (không bán hàng trực tiếp) → GIỮ đúng giọng kể chuyện gần gũi, KHÔNG thêm lời mời gọi chốt đơn, KHÔNG thêm Hotline/Zalo/địa chỉ, KHÔNG tự thêm #hashtag nếu bài gốc không có.',
+    );
+  }
+
   const variationDirectives: string[] = [
+    ...factGuards,
+    '',
     `[CHIẾN LƯỢC CHỐNG SPAM & KHÁC BIỆT HÓA BÀI ĐĂNG]`,
     `- Phong cách viết: ${WRITING_STYLE_INSTRUCTIONS[styleId]}`,
     `- Góc tiếp cận bắt buộc cho phiên bản này (${angle.label}): ${angle.instruction}`,
@@ -431,13 +709,13 @@ NGUYÊN TẮC BẮT BUỘC:
 
   if (parsedVarIndex !== undefined) {
     variationDirectives.push(
-      `- Đây là biến thể riêng số #${parsedVarIndex + 1}${parsedTotal ? `/${parsedTotal}` : ''}. Hãy diễn đạt lại hoàn toàn câu mở đầu, cách sắp xếp các ý nổi bật, bộ emoji và lời kêu gọi hành động (CTA) để bài này khác biệt rõ rệt (trên 70% cách diễn đạt mới) so với bản gốc và các biến thể khác.`,
+      `- Đây là biến thể riêng số #${parsedVarIndex + 1}${parsedTotal ? `/${parsedTotal}` : ''}. Hãy diễn đạt lại hoàn toàn câu mở đầu, cách sắp xếp các ý và bộ emoji để bài này khác biệt rõ rệt (trên 70% cách diễn đạt mới) so với bản gốc và các biến thể khác.`,
     );
   }
 
   if (cleanGroupName) {
     variationDirectives.push(
-      `- Ngữ cảnh đăng bài: Hội nhóm Facebook "${cleanGroupName}". Điều chỉnh giọng điệu mở đầu/CTA tự nhiên phù hợp với thành viên nhóm này (không cần lặp lại nguyên tên nhóm nếu nghe gượng gạo).`,
+      `- Ngữ cảnh đăng bài: Hội nhóm Facebook "${cleanGroupName}". Giữ giọng văn tự nhiên phù hợp với thành viên nhóm (không cần chèn tên nhóm nếu nghe gượng gạo).`,
     );
   }
 
@@ -455,17 +733,21 @@ NGUYÊN TẮC BẮT BUỘC:
 
   const finalPrompt = `${variationDirectives.join('\n')}\n\n${promptBody}`;
 
-  const systemInstruction =
-    'Bạn là Senior Copywriter chuyên viết bài bán hàng Facebook chuyển đổi cao tại Việt Nam. ' +
-    'Mục tiêu tối thượng: (1) Nâng tầm nội dung trở nên chuyên nghiệp, mạch lạc, giàu sức thuyết phục, đọc tự nhiên như người thật viết; ' +
-    '(2) Tạo biến thể ĐỘC NHẤT chống spam Facebook cho từng hội nhóm bằng cách đổi hoàn toàn câu hook, góc tiếp cận, cấu trúc câu, bộ emoji và câu CTA; ' +
-    '(3) Bảo toàn tuyệt đối 100% dữ kiện thật (tên sản phẩm, giá, ưu đãi, địa chỉ, giờ mở cửa, Hotline, Zalo); ' +
-    '(4) CHỈ trả về duy nhất bài viết hoàn chỉnh bằng tiếng Việt, KHÔNG markdown (**, *, ```), KHÔNG giải thích, mỗi ý emoji nằm trên 1 dòng riêng và tách đoạn rõ ràng bằng dòng trống.';
+  const systemInstruction = facts.isStorytelling
+    ? 'Bạn là cây viết nội dung Facebook tự nhiên tại Việt Nam. ' +
+      'Nhiệm vụ: Viết lại bài chia sẻ / kể chuyện thành phiên bản mới mẻ, khác biệt về câu chữ và emoji để tránh trùng lặp khi đăng nhiều nhóm, đồng thời giữ nguyên 100% cảm xúc, bối cảnh và thông điệp gốc. ' +
+      'QUY TẮC CẤM TUYỆT ĐỐI: KHÔNG bao giờ tự bịa thêm số điện thoại, Zalo, Hotline, địa chỉ, giá bán, ưu đãi, link web hay thông tin quảng cáo không có trong bài gốc. ' +
+      'CHỈ trả về duy nhất nội dung bài viết hoàn chỉnh bằng tiếng Việt, KHÔNG markdown (**, *, ```), KHÔNG giải thích.'
+    : 'Bạn là Senior Copywriter viết bài Facebook tự nhiên tại Việt Nam. ' +
+      'Mục tiêu: (1) Nâng tầm nội dung mạch lạc, tự nhiên, trình bày thoáng mắt; ' +
+      '(2) Tạo biến thể ĐỘC NHẤT chống spam cho từng hội nhóm bằng cách đổi câu mở đầu, góc tiếp cận, cách diễn đạt và emoji; ' +
+      '(3) Bảo toàn 100% dữ kiện thật có trong bài gốc và TUYỆT ĐỐI KHÔNG tự bịa thêm số điện thoại, Zalo, Hotline, địa chỉ, giờ mở cửa hay giá bán nếu bài gốc không có; ' +
+      '(4) CHỈ trả về duy nhất bài viết hoàn chỉnh bằng tiếng Việt, KHÔNG markdown (**, *, ```), KHÔNG giải thích.';
 
   const variationSeed =
     ((parsedVarIndex ?? Math.floor(Math.random() * 50)) + 1) * 1009 + (Date.now() % 100000);
 
-  let response;
+  let rawText = '';
   let usedModel: SupportedGeminiModel;
   try {
     const out = await generateWithFallback(
@@ -475,19 +757,22 @@ NGUYÊN TẮC BẮT BUỘC:
       systemInstruction,
       variationSeed,
     );
-    response = out.response;
+    rawText = out.text;
     usedModel = out.usedModel;
   } catch (err) {
     const formatted = formatGeminiError(err);
+    if (/returned empty text/i.test(formatted.message)) {
+      return { ok: false, status: 502, error: 'AI trả về nội dung rỗng. Vui lòng thử lại.' };
+    }
     return { ok: false, status: formatted.status, error: formatted.message };
   }
 
-  const rawText = response.text ?? '';
   if (!rawText.trim()) {
     return { ok: false, status: 502, error: 'AI trả về nội dung rỗng. Vui lòng thử lại.' };
   }
 
-  const cleaned = formatSalesContent(cleanAiRewriteOutput(rawText)) || formatSalesContent(rawText);
+  const cleanedRaw = formatSalesContent(cleanAiRewriteOutput(rawText)) || formatSalesContent(rawText);
+  const cleaned = stripHallucinatedContacts(cleanedRaw, content, facts) || cleanedRaw;
   return {
     ok: true,
     text: cleaned,
@@ -515,7 +800,7 @@ export async function testGeminiConnection(requestedModel?: unknown): Promise<
 
   const start = Date.now();
   try {
-    const { response, usedModel } = await generateWithFallback(
+    const { text, usedModel } = await generateWithFallback(
       ai,
       typeof requestedModel === 'string' ? requestedModel : undefined,
       'Trả lời đúng 2 từ: Sẵn sàng.',
@@ -526,7 +811,7 @@ export async function testGeminiConnection(requestedModel?: unknown): Promise<
       ok: true,
       model: usedModel,
       latencyMs,
-      reply: (response.text ?? 'Sẵn sàng').trim(),
+      reply: (text || 'Sẵn sàng').trim(),
     };
   } catch (err) {
     const formatted = formatGeminiError(err);

@@ -861,17 +861,16 @@
             const stopPostingRef = useRef(false);
             const typingIntervalRef = useRef(null);
             const userSettingsLoadedRef = useRef(false);
-            const defaultPrompt = `Nâng cấp và viết lại nội dung sau thành một bài đăng bán hàng Facebook CHUYÊN NGHIỆP, tự nhiên như Copywriter thực thụ, thuyết phục cao và trình bày thoáng mắt trên điện thoại.
+            const defaultPrompt = `Viết lại nội dung sau thành một bài đăng Facebook tự nhiên, mạch lạc, khác biệt hoàn toàn về cách diễn đạt để chống trùng lặp khi đăng nhiều nhóm và trình bày thoáng mắt trên điện thoại.
 
-CẤU TRÚC CHUẨN 5 KHỐI (tách nhau bằng 1 dòng trống):
-1. Dòng mở đầu (Hook): 1 câu thu hút dừng lướt, tự nhiên, KHÔNG viết toàn bộ chữ IN HOA gây cảm giác spam.
-2. Khối giá trị & điểm nổi bật: 3–4 gạch đầu dòng súc tích chuyển tính năng thành lợi ích thực tế. MỖI ý dùng 1 emoji phù hợp ở đầu dòng và XUỐNG DÒNG RIÊNG.
-3. Khối giá bán & đặc quyền ưu đãi: tách thành đoạn riêng, mỗi quyền lợi (giá, trả góp, ưu đãi, thu cũ đổi mới...) nằm trên 1 dòng ngắn gọn, rõ ràng.
-4. Khối kêu gọi hành động (CTA) & liên hệ: lời mời tự nhiên kèm đúng các thông tin liên hệ có trong bài gốc (địa chỉ, giờ mở cửa, Hotline/Zalo) trên từng dòng riêng.
-5. Cụm #Hashtag nằm ở dòng cuối cùng, tách bằng 1 dòng trống phía trên.
+BỐ CỤC LINH HOẠT (CHỈ đưa vào những phần CÓ THẬT trong bài gốc, tách đoạn bằng 1 dòng trống):
+- Giữ đúng thể loại bài gốc (nếu là bài chia sẻ / kể chuyện / tâm sự thì giữ giọng tự nhiên gần gũi; nếu là bài bán hàng thì trình bày rõ ràng, thuyết phục).
+- Mở đầu thu hút tự nhiên (KHÔNG viết toàn bộ chữ IN HOA gây cảm giác spam).
+- Các ý chính rõ ràng: mỗi ý dùng 1 emoji phù hợp ở đầu dòng và XUỐNG DÒNG RIÊNG.
+- Nếu bài gốc có giá bán, ưu đãi, địa chỉ, giờ mở cửa hoặc SĐT/Zalo: giữ nguyên 100% thông tin thật đó.
 
-NGUYÊN TẮC BẮT BUỘC:
-- GIỮ NGUYÊN 100% thông tin thực tế từ bài gốc (tên sản phẩm, thương hiệu, giá bán, ưu đãi, địa chỉ, khung giờ, Hotline, Zalo). Tuyệt đối KHÔNG tự bịa thêm thông số hay giờ mở cửa không có trong bài gốc.
+NGUYÊN TẮC CẤM TUYỆT ĐỐI:
+- TUYỆT ĐỐI KHÔNG tự bịa thêm số điện thoại, Zalo, Hotline, địa chỉ, giờ mở cửa, giá bán, khuyến mãi hay #hashtag nếu bài gốc KHÔNG CÓ.
 - Không dùng ký tự markdown (**in đậm**, *in nghiêng*, \`\`\`, ###).
 - Không thêm lời giải thích hay ghi chú ("Dưới đây là", "Biến thể", "Final", "Note").
 - Chỉ trả về duy nhất nội dung bài viết hoàn chỉnh bằng tiếng Việt.
@@ -882,6 +881,7 @@ Input:
             const [writingStyle, setWritingStyle] = useState(() => storage.get('ai_writing_style', 'auto'));
             const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
             const [toasts, setToasts] = useState([]);
+            const toastTimersRef = useRef(new Map());
             const [logs, setLogs] = useState([]);
             const [progress, setProgress] = useState(0);
             const [isRewriting, setIsRewriting] = useState(false);
@@ -1413,12 +1413,13 @@ Input:
             useEffect(() => { imageDB.save(images); }, [images]);
 
             useEffect(() => {
-                // Auto-upgrade legacy default prompts to the upgraded professional 5-block anti-spam prompt
+                // Auto-upgrade legacy default prompts (including old 5-block prompt that could trigger fake Hotline/Zalo)
                 const saved = storage.get('ai_custom_prompt', '');
                 if (
                     saved &&
                     (saved.includes('QUY TẮC HARDCORE') ||
                         saved.includes('BẮT BUỘC TRÌNH BÀY THEO 5 PHẦN TÁCH BIỆT BẰNG DÒNG TRỐNG') ||
+                        saved.includes('CẤU TRÚC CHUẨN 5 KHỐI') ||
                         (!saved.includes('XUỐNG DÒNG RIÊNG') && !saved.includes('xuống dòng')))
                 ) {
                     storage.set('ai_custom_prompt', defaultPrompt);
@@ -1433,11 +1434,45 @@ Input:
                 }
             }, []);
 
-            const showToast = (message, type = 'info') => {
+            const removeToast = useCallback((id) => {
+                const existingTimer = toastTimersRef.current.get(id);
+                if (existingTimer) {
+                    clearTimeout(existingTimer);
+                    toastTimersRef.current.delete(id);
+                }
+                setToasts(prev => prev.filter(t => t.id !== id));
+            }, []);
+
+            const showToast = useCallback((message, type = 'info', duration = 3000) => {
                 const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-                setToasts(prev => [...prev, { id, message, type }]);
-            };
-            const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+                setToasts(prev => {
+                    const next = [...prev, { id, message, type, duration }];
+                    if (next.length > 4) {
+                        const evicted = next.slice(0, next.length - 4);
+                        evicted.forEach(t => {
+                            const oldTimer = toastTimersRef.current.get(t.id);
+                            if (oldTimer) {
+                                clearTimeout(oldTimer);
+                                toastTimersRef.current.delete(t.id);
+                            }
+                        });
+                        return next.slice(-4);
+                    }
+                    return next;
+                });
+                const timer = setTimeout(() => {
+                    toastTimersRef.current.delete(id);
+                    setToasts(prev => prev.filter(t => t.id !== id));
+                }, duration);
+                toastTimersRef.current.set(id, timer);
+            }, []);
+
+            useEffect(() => {
+                return () => {
+                    toastTimersRef.current.forEach(timer => clearTimeout(timer));
+                    toastTimersRef.current.clear();
+                };
+            }, []);
             const normalizeFbUrl = (url) => {
                 if (!url || typeof url !== 'string') return url;
                 return url.trim().replace(/\\\//g, '/').replace(/([^:]\/)\/+/g, '$1');
@@ -2017,6 +2052,89 @@ Input:
                 setSuccessItems([]);
                 storage.set('success_items', []);
                 showToast('Đã xóa danh sách bài thành công đã lưu.', 'info');
+            };
+
+            const handleSaveLiveGroupsCollection = ({ name = '', mergeCollectionId = '' } = {}) => {
+                const liveItems = (successItemsRef.current || []).filter((it) => it && it.status === 'live');
+                if (liveItems.length === 0) {
+                    showToast('Chưa có nhóm nào đăng thành công & hiển thị ngay (không cần duyệt). Hãy chạy "Kiểm tra duyệt / gỡ" trước!', 'warning');
+                    return { ok: false, count: 0 };
+                }
+
+                const extractGroupIdFromLink = (link) => {
+                    if (!link) return '';
+                    const m = String(link).match(/facebook\.com\/groups\/([^/?#]+)/i);
+                    return m ? m[1] : '';
+                };
+
+                const resolvedIds = [];
+                const seenIds = new Set();
+                for (const item of liveItems) {
+                    const rawId = String(item.groupId || '').trim();
+                    const linkId = extractGroupIdFromLink(item.link);
+                    const itemNameLower = String(item.groupName || '').trim().toLowerCase();
+
+                    const matchedGroup = groups.find((g) => {
+                        const gid = String(g.id || '').trim();
+                        if (rawId && gid === rawId) return true;
+                        if (linkId && gid === linkId) return true;
+                        if (linkId && g.url && String(g.url).includes(`/groups/${linkId}`)) return true;
+                        if (itemNameLower && String(g.name || '').trim().toLowerCase() === itemNameLower) return true;
+                        return false;
+                    });
+
+                    const finalId = matchedGroup ? matchedGroup.id : (rawId || linkId);
+                    const key = String(finalId || '').trim();
+                    if (key && !seenIds.has(key)) {
+                        seenIds.add(key);
+                        resolvedIds.push(finalId);
+                    }
+                }
+
+                if (resolvedIds.length === 0) {
+                    showToast('Không tìm thấy ID nhóm hợp lệ từ danh sách bài hiển thị!', 'error');
+                    return { ok: false, count: 0 };
+                }
+
+                if (mergeCollectionId) {
+                    const targetCol = collections.find((col) => col.id === mergeCollectionId);
+                    if (!targetCol) {
+                        showToast('Không tìm thấy bộ sưu tập cần gộp!', 'error');
+                        return { ok: false, count: 0 };
+                    }
+                    const existingKeys = new Set((targetCol.groupIds || []).map((id) => String(id)));
+                    const merged = [...(targetCol.groupIds || [])];
+                    let addedCount = 0;
+                    for (const gid of resolvedIds) {
+                        if (!existingKeys.has(String(gid))) {
+                            existingKeys.add(String(gid));
+                            merged.push(gid);
+                            addedCount++;
+                        }
+                    }
+                    const totalCount = merged.length;
+                    setCollections((prev) => prev.map((col) => (
+                        col.id === mergeCollectionId ? { ...col, groupIds: merged } : col
+                    )));
+                    if (addedCount > 0) {
+                        showToast(`⭐ Đã thêm ${addedCount} nhóm không cần duyệt vào "${targetCol.name}" (tổng ${totalCount} nhóm)!`, 'success');
+                    } else {
+                        showToast(`Tất cả ${resolvedIds.length} nhóm không cần duyệt đã có sẵn trong "${targetCol.name}".`, 'info');
+                    }
+                    return { ok: true, count: resolvedIds.length, addedCount };
+                }
+
+                const now = new Date();
+                const dateTag = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const finalName = String(name || '').trim() || `Nhóm không duyệt (${dateTag})`;
+                const newCol = {
+                    id: Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+                    name: finalName,
+                    groupIds: resolvedIds
+                };
+                setCollections((prev) => [...prev, newCol]);
+                showToast(`⭐ Đã lưu bộ sưu tập "${finalName}" (${resolvedIds.length} nhóm không cần duyệt)!`, 'success');
+                return { ok: true, count: resolvedIds.length };
             };
 
             const handleCheckPostStatuses = async (targetIds = null) => {
@@ -2764,11 +2882,20 @@ Input:
                     let data;
                     try {
                         data = await callRewriteApi(model);
+                        if (!(data.rewritten || data.text || '').trim()) {
+                            const emptyErr = new Error('AI trả về nội dung rỗng. Vui lòng thử lại.');
+                            emptyErr.status = 502;
+                            throw emptyErr;
+                        }
                     } catch (firstErr) {
-                        const isTimeoutOrTransient = firstErr?.status === 504 || firstErr?.status === 502 || /timed out|504|network/i.test(firstErr?.message || '');
-                        if (isTimeoutOrTransient && model !== 'gemini-3.1-flash-lite') {
-                            addLog('info', `⚡ Model ${model} phản hồi chậm, tự động thử nhanh bằng gemini-3.1-flash-lite...`);
-                            data = await callRewriteApi('gemini-3.1-flash-lite');
+                        const isTimeoutOrTransient =
+                            firstErr?.status === 504 ||
+                            firstErr?.status === 502 ||
+                            /timed out|504|502|nội dung rỗng|network/i.test(firstErr?.message || '');
+                        if (isTimeoutOrTransient) {
+                            const altModel = model === 'gemini-3.1-flash-lite' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
+                            addLog('info', `⚡ Thử lại tự động bằng ${altModel}...`);
+                            data = await callRewriteApi(altModel);
                         } else {
                             throw firstErr;
                         }
@@ -3343,9 +3470,9 @@ Input:
                                                                         <SettingsDelay delayMin={safeDelayMin} setDelayMin={setSafeDelayMin} delayMax={safeDelayMax} setDelayMax={setSafeDelayMax} postingCountdown={postingCountdown} postMode={postMode} setPostMode={setPostMode} t={t} />
                                                                         <SettingsAI 
                                                                             model={model} 
-                                                                            setModel={setModel}
-                                                                            writingStyle={writingStyle}
-                                                                            setWritingStyle={setWritingStyle}
+                                                                            setModel={setModel} 
+                                                                            writingStyle={writingStyle} 
+                                                                            setWritingStyle={setWritingStyle} 
                                                                             customPrompt={customPrompt} 
                                                                             setCustomPrompt={setCustomPrompt} 
                                                                             defaultPrompt={defaultPrompt} 
@@ -3354,8 +3481,23 @@ Input:
                                                                             showToast={showToast} 
                                                                         />
                                                                     </div>
+                                                                    <ProgressLog
+                                                                        logs={logs}
+                                                                        progress={progress}
+                                                                        t={t}
+                                                                        successItems={successItems}
+                                                                        isCheckingStatus={isCheckingStatus}
+                                                                        checkProgress={checkProgress}
+                                                                        onCheckAllStatus={() => handleCheckPostStatuses(null)}
+                                                                        onCheckSingleStatus={(id) => handleCheckPostStatuses([id])}
+                                                                        onStopCheckStatus={handleStopCheckStatus}
+                                                                        onClearSuccessItems={handleClearSuccessItems}
+                                                                        collections={collections}
+                                                                        onSaveLiveGroupsCollection={handleSaveLiveGroupsCollection}
+                                                                        noTopMargin={true}
+                                                                    />
                                                                 </div>
-                                                                <div className="lg:col-span-4 w-full min-w-0">
+                                                                <div className="lg:col-span-4 w-full min-w-0 lg:sticky lg:top-20 lg:self-start">
                                                                     <GroupsPanel
                                                                         fbUser={fbUser}
                                                                         selectedPage={selectedPage}
@@ -3382,18 +3524,6 @@ Input:
                                                                     />
                                                                 </div>
                                                             </div>
-                                                            <ProgressLog
-                                                                logs={logs}
-                                                                progress={progress}
-                                                                t={t}
-                                                                successItems={successItems}
-                                                                isCheckingStatus={isCheckingStatus}
-                                                                checkProgress={checkProgress}
-                                                                onCheckAllStatus={() => handleCheckPostStatuses(null)}
-                                                                onCheckSingleStatus={(id) => handleCheckPostStatuses([id])}
-                                                                onStopCheckStatus={handleStopCheckStatus}
-                                                                onClearSuccessItems={handleClearSuccessItems}
-                                                            />
                                                         </>
                                                     )
                                                 )}
@@ -3485,6 +3615,8 @@ Input:
                                                             onCheckSingleStatus={(id) => handleCheckPostStatuses([id])}
                                                             onStopCheckStatus={handleStopCheckStatus}
                                                             onClearSuccessItems={handleClearSuccessItems}
+                                                            collections={collections}
+                                                            onSaveLiveGroupsCollection={handleSaveLiveGroupsCollection}
                                                         />
                                                     )
                                                 )}
@@ -4309,7 +4441,10 @@ Input:
 
             // Apply collection selection
             const handleApplyCollection = (col) => {
-                const validGroupIds = col.groupIds.filter(id => groups.some(g => g.id === id));
+                const targetKeys = new Set((col.groupIds || []).map(id => String(id)));
+                const validGroupIds = groups
+                    .filter(g => targetKeys.has(String(g.id)))
+                    .map(g => g.id);
                 if (validGroupIds.length === 0) {
                     showToast('Không có nhóm nào trong bộ sưu tập này tồn tại trong danh sách!', 'error');
                     return;
@@ -4347,7 +4482,7 @@ Input:
             };
 
             return (
-                <div className="bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 flex flex-col h-[460px] sm:h-[540px] lg:h-[600px] lg:sticky lg:top-24 overflow-hidden">
+                <div className="bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 flex flex-col h-[500px] sm:h-[560px] lg:h-[calc(100vh-6.5rem)] lg:max-h-[760px] lg:min-h-[500px] overflow-hidden">
                     <div className="p-4 border-b border-border-light bg-gray-50/30 dark:bg-slate-800/50">
                         <div className="flex justify-between items-center mb-3">
                             <div className="flex items-center gap-2">
@@ -4601,7 +4736,8 @@ Input:
             installedExtVersion, requiredExtVersion, duplicateExtCount,
             shareCountdown, shareDelayMin, setShareDelayMin, shareDelayMax, setShareDelayMax,
             logs, progress, showToast, isScanningGroups,
-            successItems, isCheckingStatus, checkProgress, onCheckAllStatus, onCheckSingleStatus, onStopCheckStatus, onClearSuccessItems
+            successItems, isCheckingStatus, checkProgress, onCheckAllStatus, onCheckSingleStatus, onStopCheckStatus, onClearSuccessItems,
+            collections = [], onSaveLiveGroupsCollection
         }) {
             const [manualPostUrl, setManualPostUrl] = useState('');
             const [pageSearch, setPageSearch] = useState('');
@@ -5019,6 +5155,8 @@ Input:
                         onCheckSingleStatus={onCheckSingleStatus}
                         onStopCheckStatus={onStopCheckStatus}
                         onClearSuccessItems={onClearSuccessItems}
+                        collections={collections}
+                        onSaveLiveGroupsCollection={onSaveLiveGroupsCollection}
                     />
                 </>
             );
@@ -5591,23 +5729,75 @@ Input:
             onCheckAllStatus,
             onCheckSingleStatus,
             onStopCheckStatus,
-            onClearSuccessItems
+            onClearSuccessItems,
+            collections = [],
+            onSaveLiveGroupsCollection,
+            noTopMargin = false
         }) {
             const { showToast } = useContext(AppContext) || {};
             const logContainerRef = React.useRef(null);
             const [statusFilter, setStatusFilter] = useState('all');
             const [copiedItemId, setCopiedItemId] = useState(null);
             const [copiedAll, setCopiedAll] = useState(false);
+            const [isSavingLiveCol, setIsSavingLiveCol] = useState(false);
+            const [saveMode, setSaveMode] = useState('new'); // 'new' | 'merge'
+            const [liveColName, setLiveColName] = useState('');
+            const [mergeTargetId, setMergeTargetId] = useState('');
 
             const counts = useMemo(() => {
                 let live = 0, pending = 0, removed = 0;
+                const liveGroupKeys = new Set();
                 for (const it of successItems) {
-                    if (it.status === 'live') live++;
+                    if (it.status === 'live') {
+                        live++;
+                        const key = String(it.groupId || it.groupName || it.id || '').trim();
+                        if (key) liveGroupKeys.add(key);
+                    }
                     else if (it.status === 'pending') pending++;
                     else if (it.status === 'removed') removed++;
                 }
-                return { all: successItems.length, live, pending, removed };
+                return { all: successItems.length, live, liveUniqueGroups: liveGroupKeys.size, pending, removed };
             }, [successItems]);
+
+            const openSaveLiveCollection = () => {
+                if (counts.liveUniqueGroups === 0) {
+                    if (showToast) {
+                        showToast('Chưa có nhóm nào hiển thị ngay (không cần duyệt). Hãy chờ tự động kiểm tra hoặc bấm "Kiểm tra duyệt / gỡ" trước!', 'info');
+                    }
+                    return;
+                }
+                const now = new Date();
+                const dateTag = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}`;
+                setLiveColName(`Nhóm không duyệt (${dateTag})`);
+                setSaveMode('new');
+                if (collections.length > 0 && !mergeTargetId) {
+                    setMergeTargetId(collections[0].id);
+                }
+                setIsSavingLiveCol((prev) => !prev);
+            };
+
+            const confirmSaveLiveCollection = () => {
+                if (!onSaveLiveGroupsCollection) return;
+                if (saveMode === 'merge') {
+                    const targetId = mergeTargetId || (collections[0] ? collections[0].id : '');
+                    if (!targetId) {
+                        if (showToast) showToast('Vui lòng chọn bộ sưu tập cần gộp!', 'error');
+                        return;
+                    }
+                    const res = onSaveLiveGroupsCollection({ mergeCollectionId: targetId });
+                    if (res && res.ok) setIsSavingLiveCol(false);
+                    return;
+                }
+                if (!liveColName.trim()) {
+                    if (showToast) showToast('Vui lòng nhập tên bộ sưu tập!', 'error');
+                    return;
+                }
+                const res = onSaveLiveGroupsCollection({ name: liveColName.trim() });
+                if (res && res.ok) {
+                    setIsSavingLiveCol(false);
+                    setLiveColName('');
+                }
+            };
 
             const filteredItems = useMemo(() => {
                 if (statusFilter === 'all') return successItems;
@@ -5716,7 +5906,7 @@ Input:
             }, [logs]);
 
             return (
-                <div className="mt-6 sm:mt-8 bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 overflow-hidden">
+                <div className={`${noTopMargin ? '' : 'mt-6 sm:mt-8 '}bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 overflow-hidden`}>
                     <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-border-light flex flex-wrap justify-between items-center gap-2 bg-gray-50/30 dark:bg-slate-800/50">
                         <div className="flex items-center gap-3">
                             <div className="p-1.5 bg-slate-100 dark:bg-slate-700 rounded-md text-slate-600 dark:text-slate-300">
@@ -5753,6 +5943,21 @@ Input:
                                     </div>
                                     <h3 className="text-sm font-semibold text-text-main dark:text-white">Bài thành công &amp; Link</h3>
                                     <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                                        {counts.all > 0 && onSaveLiveGroupsCollection && (
+                                            <button
+                                                type="button"
+                                                onClick={openSaveLiveCollection}
+                                                title={counts.liveUniqueGroups > 0
+                                                    ? `Lưu ${counts.liveUniqueGroups} nhóm đăng thành công, không cần QTV duyệt vào Bộ sưu tập nhóm`
+                                                    : 'Chạy kiểm tra trạng thái để lọc các nhóm hiển thị ngay (không cần duyệt) rồi lưu thành bộ sưu tập'}
+                                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${counts.liveUniqueGroups > 0
+                                                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
+                                                    : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600/70 dark:text-amber-400/70 border border-amber-200/70 dark:border-amber-800/50'}`}
+                                            >
+                                                <span className="material-symbols-outlined text-[14px]">star</span>
+                                                <span>Lưu BST không duyệt{counts.liveUniqueGroups > 0 ? ` (${counts.liveUniqueGroups})` : ''}</span>
+                                            </button>
+                                        )}
                                         {counts.all > 0 && (
                                             <button
                                                 type="button"
@@ -5811,6 +6016,79 @@ Input:
                                         )}
                                     </div>
                                 </div>
+
+                                {isSavingLiveCol && counts.liveUniqueGroups > 0 && (
+                                    <div className="mb-2.5 p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 space-y-2">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[14px] text-amber-500">star</span>
+                                                Lưu {counts.liveUniqueGroups} nhóm đăng thành công, không cần duyệt
+                                            </span>
+                                            {collections.length > 0 && (
+                                                <div className="inline-flex rounded-lg bg-white/80 dark:bg-slate-800 p-0.5 border border-amber-200/80 dark:border-slate-700 text-[10px] font-semibold">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSaveMode('new')}
+                                                        className={`px-2 py-0.5 rounded-md transition-colors ${saveMode === 'new' ? 'bg-amber-500 text-white' : 'text-slate-600 dark:text-slate-300'}`}
+                                                    >
+                                                        Tạo mới
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSaveMode('merge');
+                                                            if (!mergeTargetId && collections[0]) setMergeTargetId(collections[0].id);
+                                                        }}
+                                                        className={`px-2 py-0.5 rounded-md transition-colors ${saveMode === 'merge' ? 'bg-amber-500 text-white' : 'text-slate-600 dark:text-slate-300'}`}
+                                                    >
+                                                        Gộp vào BST có sẵn
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            {saveMode === 'merge' && collections.length > 0 ? (
+                                                <select
+                                                    value={mergeTargetId || collections[0].id}
+                                                    onChange={(e) => setMergeTargetId(e.target.value)}
+                                                    className="flex-1 min-w-[160px] bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-amber-500 text-text-main dark:text-gray-200"
+                                                >
+                                                    {collections.map((col) => (
+                                                        <option key={col.id} value={col.id}>
+                                                            ⭐ {col.name} ({(col.groupIds || []).length} nhóm)
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    value={liveColName}
+                                                    onChange={(e) => setLiveColName(e.target.value)}
+                                                    placeholder="Nhập tên bộ sưu tập (VD: Nhóm không duyệt)..."
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') confirmSaveLiveCollection();
+                                                        if (e.key === 'Escape') setIsSavingLiveCol(false);
+                                                    }}
+                                                    className="flex-1 min-w-[160px] bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-amber-500 text-text-main dark:text-gray-200"
+                                                />
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={confirmSaveLiveCollection}
+                                                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm transition-colors"
+                                            >
+                                                {saveMode === 'merge' ? 'Gộp nhóm' : 'Lưu bộ sưu tập'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsSavingLiveCol(false)}
+                                                className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-text-secondary text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors"
+                                            >
+                                                Hủy
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {counts.all > 0 && (
                                     <div className="flex flex-wrap items-center gap-1.5 mb-2.5 text-[11px]">
@@ -6022,12 +6300,16 @@ Input:
 
 
         function ToastItem({ toast, removeToast }) {
+            const removeRef = useRef(removeToast);
+            removeRef.current = removeToast;
+
             useEffect(() => {
+                const duration = typeof toast.duration === 'number' && toast.duration > 0 ? toast.duration : 3000;
                 const timer = setTimeout(() => {
-                    removeToast(toast.id);
-                }, 3000);
+                    removeRef.current(toast.id);
+                }, duration + 150);
                 return () => clearTimeout(timer);
-            }, [toast.id, removeToast]);
+            }, [toast.id, toast.duration]);
 
             const getToastStyles = (type) => {
                 switch (type) {
@@ -6062,8 +6344,7 @@ Input:
 
             return (
                 <div
-                    className={`relative flex items-center gap-3 px-4 py-4 rounded-3xl shadow-2xl text-white overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl ${styles.bg}`}
-                    style={{ animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                    className={`relative flex items-center gap-3 px-4 py-4 rounded-3xl shadow-2xl text-white overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl animate-slide-in-right ${styles.bg}`}
                 >
                     {/* Glow effect */}
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
@@ -6080,6 +6361,7 @@ Input:
 
                     {/* Close button */}
                     <button
+                        type="button"
                         onClick={() => removeToast(toast.id)}
                         className="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
                     >
@@ -6088,10 +6370,7 @@ Input:
 
                     {/* Progress bar */}
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-                        <div
-                            className="h-full bg-white/60 rounded-full"
-                            style={{ animation: 'shrink 3s linear forwards' }}
-                        ></div>
+                        <div className="h-full bg-white/60 rounded-full animate-shrink"></div>
                     </div>
                 </div>
             );
