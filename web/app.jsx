@@ -75,7 +75,7 @@
         }
 
         // Resilient 3-channel Extension ZIP downloader (works on Vercel Edge CDN, Vercel API, and local/iframe preview)
-        async function downloadExtensionZip(version = '3.5') {
+        async function downloadExtensionZip(version = '3.6') {
             const filename = `fb-tool-ext-v${version}.zip`;
             const cacheBust = `v=${encodeURIComponent(version)}&t=${Date.now()}`;
             let zipBytes = null;
@@ -890,7 +890,7 @@ Input:
             const [shareCaption, setShareCaption] = useState('');
             const [isScanning, setIsScanning] = useState(false);
             const [isScanningGroups, setIsScanningGroups] = useState(false); // Track group scan
-            const REQUIRED_EXT_VERSION = '3.5';
+            const REQUIRED_EXT_VERSION = '3.6';
             const [installedExtVersion, setInstalledExtVersion] = useState(() => (typeof document !== 'undefined' ? (document.documentElement?.dataset?.fbToolInstalled || '') : ''));
             const [duplicateExtCount, setDuplicateExtCount] = useState(0);
             const seenExtIdsRef = useRef(new Set());
@@ -1455,7 +1455,7 @@ Input:
                         } : it));
                         resolve({ status: 'unknown' });
                     }
-                }, 20000);
+                }, 25000);
                 pendingStatusChecksRef.current.set(item.id, (res) => {
                     clearTimeout(timer);
                     resolve(res);
@@ -1993,7 +1993,7 @@ Input:
                         showToast('Đã lấy Fanpage mẫu (Chế độ xem trước)!', 'success');
                         return;
                     }
-                    return showToast('Vui lòng cài đặt Extension v3.5 trước!', 'error');
+                    return showToast('Vui lòng cài đặt Extension v3.6 trước!', 'error');
                 }
                 setIsFetchingPages(true);
                 addLog('info', 'Đang tìm tab Fanpage Facebook đang mở...');
@@ -2059,7 +2059,7 @@ Input:
                                 } : it));
                                 resolve({ status: 'unknown' });
                             }
-                        }, 18000);
+                        }, 25000);
 
                         pendingStatusChecksRef.current.set(item.id, (res) => {
                             clearTimeout(timer);
@@ -2171,7 +2171,7 @@ Input:
                         addLog('success', '✅ Đã quét 2 bài viết mẫu từ trang');
                         return;
                     }
-                    return showToast('Vui lòng cài đặt Extension v3.5 trước!', 'error');
+                    return showToast('Vui lòng cài đặt Extension v3.6 trước!', 'error');
                 }
 
                 setPagePosts([]);
@@ -2182,7 +2182,7 @@ Input:
             };
 
             const handleSharePosts = async () => {
-                if (!extensionStatus && !previewMode) return showToast('Vui lòng cài đặt Extension v3.5 trước!', 'error');
+                if (!extensionStatus && !previewMode) return showToast('Vui lòng cài đặt Extension v3.6 trước!', 'error');
                 const liveExtVer = installedExtVersion || (typeof document !== 'undefined' ? (document.documentElement?.dataset?.fbToolInstalled || '') : '');
                 if (extensionStatus && liveExtVer && liveExtVer !== REQUIRED_EXT_VERSION) {
                     const msg = `Chrome đang chạy Extension bản cũ (v${liveExtVer})! Vui lòng vào chrome://extensions gỡ bản cũ và cài bản v${REQUIRED_EXT_VERSION} để chia sẻ đúng nhóm đã chọn.`;
@@ -3201,17 +3201,17 @@ Input:
                                                         type="button"
                                                         onClick={async () => {
                                                             try {
-                                                                const { filename, kb } = await downloadExtensionZip('3.5');
-                                                                showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.5.`, 'success');
+                                                                const { filename, kb } = await downloadExtensionZip('3.6');
+                                                                showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.6.`, 'success');
                                                             } catch (e) {
-                                                                showToast(e?.message || 'Lỗi tải Extension v3.5', 'error');
+                                                                showToast(e?.message || 'Lỗi tải Extension v3.6', 'error');
                                                             }
                                                         }}
-                                                        title="Tải bản cập nhật Extension v3.5 (tự động kiểm tra chuẩn xác đã hiển thị / chờ duyệt / bị gỡ ngay sau khi đăng)"
+                                                        title="Tải bản cập nhật Extension v3.6 (kiểm tra chính xác bài đang hiển thị kể cả giao diện cửa sổ bật lên / chờ duyệt / bị gỡ)"
                                                         className={`w-full flex items-center rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors font-semibold ${sidebarCollapsed ? 'justify-center p-1.5' : 'justify-center gap-1.5 px-2 py-1.5 text-[11px]'}`}
                                                     >
                                                         <span className="material-symbols-outlined text-[15px]">download</span>
-                                                        {!sidebarCollapsed && <span>Tải Extension v3.5</span>}
+                                                        {!sidebarCollapsed && <span>Tải Extension v3.6</span>}
                                                     </button>
                                                     {!sidebarCollapsed && extensionStatus && installedExtVersion && (
                                                         <div className={`mt-1.5 px-2 py-1 rounded-md text-[10px] font-semibold flex items-center justify-between ${installedExtVersion === REQUIRED_EXT_VERSION && duplicateExtCount <= 1 ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400'}`}>
@@ -3672,16 +3672,16 @@ Input:
                                                     onClick={async () => {
                                                         setShowUserDropdown(false);
                                                         try {
-                                                            const { filename, kb } = await downloadExtensionZip('3.5');
-                                                            showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.5.`, 'success');
+                                                            const { filename, kb } = await downloadExtensionZip('3.6');
+                                                            showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.6.`, 'success');
                                                         } catch (e) {
-                                                            showToast(e?.message || 'Lỗi tải Extension v3.5', 'error');
+                                                            showToast(e?.message || 'Lỗi tải Extension v3.6', 'error');
                                                         }
                                                     }}
                                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-primary hover:bg-primary/5 text-left font-bold transition-all"
                                                 >
                                                     <span className="material-symbols-outlined text-base text-primary">extension</span>
-                                                    Tải Extension v3.5 (.zip)
+                                                    Tải Extension v3.6 (.zip)
                                                 </button>
 
                                                 <button 
@@ -5087,8 +5087,8 @@ Input:
                 setDownloadSuccess('');
 
                 try {
-                    const { filename, kb } = await downloadExtensionZip('3.5');
-                    const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v3.5 rồi cài vào chrome://extensions.`;
+                    const { filename, kb } = await downloadExtensionZip('3.6');
+                    const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v3.6 rồi cài vào chrome://extensions.`;
                     setDownloadSuccess(successMsg);
                     if (showToast) {
                         showToast(successMsg, 'success');
@@ -5184,7 +5184,7 @@ Input:
                                                     </span>
                                                     <span>{isDownloading ? 'Đang kiểm tra & tải...' : t('ext_download_btn')}</span>
                                                     {!isDownloading && (
-                                                        <span className="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded shrink-0">v3.5</span>
+                                                        <span className="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded shrink-0">v3.6</span>
                                                     )}
                                                 </button>
                                                 <button
@@ -5564,8 +5564,11 @@ Input:
             onStopCheckStatus,
             onClearSuccessItems
         }) {
+            const { showToast } = useContext(AppContext) || {};
             const logContainerRef = React.useRef(null);
             const [statusFilter, setStatusFilter] = useState('all');
+            const [copiedItemId, setCopiedItemId] = useState(null);
+            const [copiedAll, setCopiedAll] = useState(false);
 
             const counts = useMemo(() => {
                 let live = 0, pending = 0, removed = 0;
@@ -5581,6 +5584,100 @@ Input:
                 if (statusFilter === 'all') return successItems;
                 return successItems.filter(it => it.status === statusFilter);
             }, [successItems, statusFilter]);
+
+            const getStatusLabelVi = (st) => {
+                if (st === 'live') return 'Đang hiển thị';
+                if (st === 'pending') return 'Chờ QTV duyệt';
+                if (st === 'removed') return 'Bị gỡ / Từ chối';
+                if (st === 'checking') return 'Đang kiểm tra';
+                if (st === 'unknown') return 'Chưa xác định';
+                return 'Chưa kiểm tra';
+            };
+
+            const sanitizeLink = (link) =>
+                link ? String(link).trim().replace(/\\\//g, '/').replace(/([^:]\/)\/+/g, '$1') : '';
+
+            const copyTextReliable = async (text) => {
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    }
+                } catch (_) {}
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    const ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    return ok;
+                } catch (_) {
+                    return false;
+                }
+            };
+
+            const handleCopySingleLink = async (itemId, link) => {
+                if (!link) return;
+                const ok = await copyTextReliable(link);
+                if (ok) {
+                    setCopiedItemId(itemId);
+                    setTimeout(() => setCopiedItemId((prev) => (prev === itemId ? null : prev)), 1800);
+                    if (showToast) showToast('Đã sao chép link bài viết!', 'success');
+                } else if (showToast) {
+                    showToast('Không thể sao chép tự động, vui lòng bôi đen link để copy.', 'error');
+                }
+            };
+
+            const handleCopyFilteredList = async () => {
+                const list = filteredItems.length > 0 ? filteredItems : successItems;
+                if (list.length === 0) return;
+                const lines = list.map((it, idx) => {
+                    const lnk = sanitizeLink(it.link) || '(Chưa có link)';
+                    return `${idx + 1}. ${it.groupName} | ${getStatusLabelVi(it.status)} | ${lnk}`;
+                });
+                const ok = await copyTextReliable(lines.join('\n'));
+                if (ok) {
+                    setCopiedAll(true);
+                    setTimeout(() => setCopiedAll(false), 1800);
+                    if (showToast) showToast(`Đã sao chép ${list.length} nhóm kèm link!`, 'success');
+                } else if (showToast) {
+                    showToast('Không thể sao chép danh sách.', 'error');
+                }
+            };
+
+            const handleExportCsv = () => {
+                const list = filteredItems.length > 0 ? filteredItems : successItems;
+                if (list.length === 0) return;
+                const csvCell = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+                const header = ['STT', 'Tên nhóm', 'Link bài viết', 'Trạng thái', 'Chi tiết', 'Thời gian đăng', 'Kiểm tra lúc'];
+                const rows = list.map((it, idx) => [
+                    idx + 1,
+                    it.groupName || '',
+                    sanitizeLink(it.link),
+                    getStatusLabelVi(it.status),
+                    it.statusDetail || '',
+                    it.time || '',
+                    it.checkedAt || ''
+                ]);
+                const csvContent = '\uFEFF' + [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const now = new Date();
+                const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+                const suffix = statusFilter === 'live' ? '-hien-thi' : statusFilter === 'pending' ? '-cho-duyet' : statusFilter === 'removed' ? '-bi-go' : '';
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ket-qua-dang-nhom${suffix}-${stamp}.csv`;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                if (showToast) showToast(`Đã xuất file kết quả ${list.length} nhóm kèm link (.csv)!`, 'success');
+            };
 
             // Auto-scroll activity logs to bottom when new logs arrive
             React.useEffect(() => {
@@ -5626,7 +5723,31 @@ Input:
                                         <span className="material-symbols-outlined text-[16px] text-emerald-600 dark:text-emerald-400">link</span>
                                     </div>
                                     <h3 className="text-sm font-semibold text-text-main dark:text-white">Bài thành công &amp; Link</h3>
-                                    <div className="ml-auto flex items-center gap-1.5">
+                                    <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                                        {counts.all > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={handleCopyFilteredList}
+                                                disabled={filteredItems.length === 0}
+                                                title="Sao chép danh sách tên nhóm kèm link theo bộ lọc đang chọn"
+                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/70 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-semibold disabled:opacity-40 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-[14px]">{copiedAll ? 'check' : 'content_copy'}</span>
+                                                <span>{copiedAll ? 'Đã chép' : 'Chép DS'}</span>
+                                            </button>
+                                        )}
+                                        {counts.all > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={handleExportCsv}
+                                                disabled={filteredItems.length === 0}
+                                                title="Xuất file Excel/CSV danh sách các nhóm đăng thành công kèm link và trạng thái"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold disabled:opacity-40 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-[14px]">download</span>
+                                                <span>Xuất kết quả</span>
+                                            </button>
+                                        )}
                                         {counts.all > 0 && (
                                             isCheckingStatus ? (
                                                 <button
@@ -5706,7 +5827,7 @@ Input:
                                     ) : (
                                         <div className="flex flex-col gap-2">
                                             {filteredItems.map((item) => {
-                                                const cleanLink = item.link ? String(item.link).trim().replace(/\\\//g, '/').replace(/([^:]\/)\/+/g, '$1') : '';
+                                                const cleanLink = sanitizeLink(item.link);
                                                 const st = item.status || 'unchecked';
                                                 const isLive = st === 'live';
                                                 const isPending = st === 'pending';
@@ -5764,6 +5885,8 @@ Input:
                                                                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                                                                 : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
 
+                                                const isCopied = copiedItemId === item.id;
+
                                                 return (
                                                     <div key={item.id} className={`group flex items-start gap-2.5 px-3 py-2.5 rounded-lg border transition-all ${cardBorder}`}>
                                                         <div className={`flex-shrink-0 w-7 h-7 mt-0.5 rounded-full flex items-center justify-center ${iconBg}`}>
@@ -5788,6 +5911,16 @@ Input:
                                                             )}
                                                         </div>
                                                         <div className="flex items-center gap-1 flex-shrink-0">
+                                                            {cleanLink && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleCopySingleLink(item.id, cleanLink)}
+                                                                    title={isCopied ? 'Đã sao chép link' : 'Sao chép link bài viết'}
+                                                                    className={`p-1 rounded-md transition-colors ${isCopied ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40' : 'text-text-tertiary hover:text-primary hover:bg-primary/10'}`}
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[15px]">{isCopied ? 'check' : 'content_copy'}</span>
+                                                                </button>
+                                                            )}
                                                             {cleanLink && onCheckSingleStatus && (
                                                                 <button
                                                                     type="button"

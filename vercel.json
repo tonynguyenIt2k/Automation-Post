@@ -15,7 +15,7 @@
       "source": "/ext-download/(.*\\.zip)",
       "headers": [
         { "key": "Content-Type", "value": "application/zip" },
-        { "key": "Content-Disposition", "value": "attachment; filename=\"fb-tool-ext-v3.5.zip\"" },
+        { "key": "Content-Disposition", "value": "attachment; filename=\"fb-tool-ext-v3.6.zip\"" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
       ]
