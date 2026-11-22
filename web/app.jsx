@@ -787,7 +787,7 @@ Input:
             const [shareCaption, setShareCaption] = useState('');
             const [isScanning, setIsScanning] = useState(false);
             const [isScanningGroups, setIsScanningGroups] = useState(false); // Track group scan
-            const REQUIRED_EXT_VERSION = '3.4';
+            const REQUIRED_EXT_VERSION = '3.5';
             const [installedExtVersion, setInstalledExtVersion] = useState(() => (typeof document !== 'undefined' ? (document.documentElement?.dataset?.fbToolInstalled || '') : ''));
             const [duplicateExtCount, setDuplicateExtCount] = useState(0);
             const seenExtIdsRef = useRef(new Set());
@@ -810,6 +810,8 @@ Input:
             const [checkProgress, setCheckProgress] = useState(null); // { done, total }
             const stopStatusCheckRef = useRef(false);
             const pendingStatusChecksRef = useRef(new Map());
+            const autoCheckQueueRef = useRef([]);
+            const autoCheckRunningRef = useRef(false);
 
             const resolvePageFromUrl = () => {
                 if (typeof window !== 'undefined') {
@@ -1332,9 +1334,71 @@ Input:
                 if (!url || typeof url !== 'string') return url;
                 return url.trim().replace(/\\\//g, '/').replace(/([^:]\/)\/+/g, '$1');
             };
+            const runSingleStatusCheck = (item) => new Promise((resolve) => {
+                if (!item || !item.link) return resolve({ status: 'unknown' });
+                setSuccessItems(prev => prev.map(it => it.id === item.id ? {
+                    ...it,
+                    status: 'checking',
+                    statusDetail: 'Đang tự động kiểm tra trên Facebook...'
+                } : it));
+                const timer = setTimeout(() => {
+                    if (pendingStatusChecksRef.current.has(item.id)) {
+                        pendingStatusChecksRef.current.delete(item.id);
+                        setSuccessItems(prev => prev.map(it => it.id === item.id ? {
+                            ...it,
+                            status: 'unknown',
+                            statusDetail: 'Hết thời gian chờ phản hồi từ Facebook (hãy bấm kiểm tra lại)',
+                            checkedAt: new Date().toLocaleTimeString('vi-VN')
+                        } : it));
+                        resolve({ status: 'unknown' });
+                    }
+                }, 20000);
+                pendingStatusChecksRef.current.set(item.id, (res) => {
+                    clearTimeout(timer);
+                    resolve(res);
+                });
+                window.postMessage({
+                    type: 'CHECK_POST_STATUS',
+                    requestId: item.id,
+                    url: item.link,
+                    groupId: item.groupId || ''
+                }, '*');
+            });
+
+            const enqueueAutoCheck = (item) => {
+                if (!item || !item.link) return;
+                const liveVer = (typeof document !== 'undefined' && document.documentElement?.dataset?.fbToolInstalled) || '';
+                if (!liveVer || liveVer !== REQUIRED_EXT_VERSION) return;
+                autoCheckQueueRef.current.push(item);
+                if (autoCheckRunningRef.current) return;
+                autoCheckRunningRef.current = true;
+                (async () => {
+                    try {
+                        while (autoCheckQueueRef.current.length > 0) {
+                            const next = autoCheckQueueRef.current.shift();
+                            const elapsed = Date.now() - (next.createdAt || 0);
+                            if (elapsed < 2500) {
+                                await new Promise(r => setTimeout(r, 2500 - elapsed));
+                            }
+                            const res = await runSingleStatusCheck(next);
+                            const icon = res.status === 'live' ? '🟢' : res.status === 'pending' ? '🟡' : res.status === 'removed' ? '🔴' : '⚪';
+                            const label = res.status === 'live' ? 'Đang hiển thị (Đã duyệt)' : res.status === 'pending' ? 'Chờ QTV duyệt' : res.status === 'removed' ? 'Bị gỡ / Từ chối' : 'Chưa xác định';
+                            addLog('info', `${icon} Tự động kiểm tra "${next.groupName}": ${label}`);
+                            if (autoCheckQueueRef.current.length > 0) {
+                                await new Promise(r => setTimeout(r, 500));
+                            }
+                        }
+                    } finally {
+                        autoCheckRunningRef.current = false;
+                    }
+                })();
+            };
+
             const recordSuccessItem = ({ groupId, groupName, link, action = 'post', isPending = false }) => {
                 const cleanLink = link ? normalizeFbUrl(link) : '';
                 const pendingFlag = Boolean(isPending || (cleanLink && cleanLink.includes('/my_pending_content')));
+                const liveVer = (typeof document !== 'undefined' && document.documentElement?.dataset?.fbToolInstalled) || '';
+                const willAutoCheck = Boolean(cleanLink && liveVer === REQUIRED_EXT_VERSION);
                 const item = {
                     id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
                     groupId: String(groupId || ''),
@@ -1343,11 +1407,17 @@ Input:
                     action,
                     time: new Date().toLocaleTimeString('vi-VN'),
                     createdAt: Date.now(),
-                    status: pendingFlag ? 'pending' : 'unchecked',
-                    statusDetail: pendingFlag ? 'Facebook báo đang chờ QTV phê duyệt' : '',
+                    status: willAutoCheck ? 'checking' : (pendingFlag ? 'pending' : 'unchecked'),
+                    statusDetail: willAutoCheck
+                        ? 'Đang tự động kiểm tra trạng thái trên Facebook...'
+                        : (pendingFlag ? 'Facebook báo đang chờ QTV phê duyệt' : ''),
                     checkedAt: null
                 };
                 setSuccessItems(prev => [item, ...prev].slice(0, 100));
+                if (willAutoCheck) {
+                    enqueueAutoCheck(item);
+                }
+                return item;
             };
             const addLog = (type, message, link = null) => {
                 const time = new Date().toLocaleTimeString('vi-VN');
@@ -1406,7 +1476,10 @@ Input:
                     setExtensionStatus(true);
                     storage.set('extension_status', true);
                     const detectedVer = String(verFromMsg || document.documentElement?.dataset?.fbToolInstalled || '').trim();
-                    if (detectedVer) setInstalledExtVersion(detectedVer);
+                    if (detectedVer) {
+                        setInstalledExtVersion(detectedVer);
+                        try { if (document.documentElement) document.documentElement.dataset.fbToolInstalled = detectedVer; } catch (_) {}
+                    }
                     if (fromMessage) {
                         if (extIdFromMsg) {
                             const idKey = `id:${extIdFromMsg}`;
@@ -1505,14 +1578,25 @@ Input:
                         });
                     }
                     if (type === 'STATUS_UPDATE') {
-                        const msg = event.data.message;
+                        const rawMsg = event.data.message !== undefined ? event.data.message : event.data.data;
+                        const msg = typeof rawMsg === 'string'
+                            ? rawMsg
+                            : (rawMsg && typeof rawMsg === 'object'
+                                ? String(rawMsg.message || rawMsg.text || '')
+                                : (rawMsg == null ? '' : String(rawMsg)));
                         if (msg && msg.trim()) {
-                            addLog('info', msg);
+                            addLog('info', msg.trim());
                         }
                     }
                     if (type === 'ERROR') {
-                        showToast(event.data.message, 'error');
-                        addLog('error', event.data.message);
+                        const rawErr = event.data.message !== undefined ? event.data.message : event.data.data;
+                        const errMsg = typeof rawErr === 'string'
+                            ? rawErr
+                            : (rawErr && typeof rawErr === 'object'
+                                ? String(rawErr.message || rawErr.text || 'Đã xảy ra lỗi')
+                                : (rawErr == null ? 'Đã xảy ra lỗi' : String(rawErr)));
+                        showToast(errMsg, 'error');
+                        addLog('error', errMsg);
                         setIsScanningGroups(false);
                         setIsScanning(false);
                         setIsFetchingPages(false);
@@ -1806,7 +1890,7 @@ Input:
                         showToast('Đã lấy Fanpage mẫu (Chế độ xem trước)!', 'success');
                         return;
                     }
-                    return showToast('Vui lòng cài đặt Extension v3.4 trước!', 'error');
+                    return showToast('Vui lòng cài đặt Extension v3.5 trước!', 'error');
                 }
                 setIsFetchingPages(true);
                 addLog('info', 'Đang tìm tab Fanpage Facebook đang mở...');
@@ -1984,7 +2068,7 @@ Input:
                         addLog('success', '✅ Đã quét 2 bài viết mẫu từ trang');
                         return;
                     }
-                    return showToast('Vui lòng cài đặt Extension v3.4 trước!', 'error');
+                    return showToast('Vui lòng cài đặt Extension v3.5 trước!', 'error');
                 }
 
                 setPagePosts([]);
@@ -1995,7 +2079,7 @@ Input:
             };
 
             const handleSharePosts = async () => {
-                if (!extensionStatus && !previewMode) return showToast('Vui lòng cài đặt Extension v3.4 trước!', 'error');
+                if (!extensionStatus && !previewMode) return showToast('Vui lòng cài đặt Extension v3.5 trước!', 'error');
                 const liveExtVer = installedExtVersion || (typeof document !== 'undefined' ? (document.documentElement?.dataset?.fbToolInstalled || '') : '');
                 if (extensionStatus && liveExtVer && liveExtVer !== REQUIRED_EXT_VERSION) {
                     const msg = `Chrome đang chạy Extension bản cũ (v${liveExtVer})! Vui lòng vào chrome://extensions gỡ bản cũ và cài bản v${REQUIRED_EXT_VERSION} để chia sẻ đúng nhóm đã chọn.`;
@@ -3014,9 +3098,9 @@ Input:
                                                         type="button"
                                                         onClick={async () => {
                                                             try {
-                                                                const res = await fetch(`/api/extension-download?format=base64&v=3.4&t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
+                                                                const res = await fetch(`/api/extension-download?format=base64&v=3.5&t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
                                                                 const payload = await res.json();
-                                                                if (!payload?.ok || !payload.base64) throw new Error('Không thể tải Extension v3.4');
+                                                                if (!payload?.ok || !payload.base64) throw new Error('Không thể tải Extension v3.5');
                                                                 const bin = window.atob(payload.base64);
                                                                 const bytes = new Uint8Array(bin.length);
                                                                 for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -3025,21 +3109,21 @@ Input:
                                                                 const url = URL.createObjectURL(blob);
                                                                 const a = document.createElement('a');
                                                                 a.href = url;
-                                                                a.download = 'fb-tool-ext-v3.4.zip';
+                                                                a.download = 'fb-tool-ext-v3.5.zip';
                                                                 document.body.appendChild(a);
                                                                 a.click();
                                                                 document.body.removeChild(a);
                                                                 setTimeout(() => URL.revokeObjectURL(url), 5000);
-                                                                showToast('Đã tải fb-tool-ext-v3.4.zip! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.4.', 'success');
+                                                                showToast('Đã tải fb-tool-ext-v3.5.zip! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.5.', 'success');
                                                             } catch (e) {
-                                                                showToast(e?.message || 'Lỗi tải Extension v3.4', 'error');
+                                                                showToast(e?.message || 'Lỗi tải Extension v3.5', 'error');
                                                             }
                                                         }}
-                                                        title="Tải bản cập nhật Extension v3.4 (kiểm tra tự động bài đã duyệt / chờ duyệt / bị gỡ, khớp chuẩn Group ID)"
+                                                        title="Tải bản cập nhật Extension v3.5 (tự động kiểm tra chuẩn xác đã hiển thị / chờ duyệt / bị gỡ ngay sau khi đăng)"
                                                         className={`w-full flex items-center rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors font-semibold ${sidebarCollapsed ? 'justify-center p-1.5' : 'justify-center gap-1.5 px-2 py-1.5 text-[11px]'}`}
                                                     >
                                                         <span className="material-symbols-outlined text-[15px]">download</span>
-                                                        {!sidebarCollapsed && <span>Tải Extension v3.4</span>}
+                                                        {!sidebarCollapsed && <span>Tải Extension v3.5</span>}
                                                     </button>
                                                     {!sidebarCollapsed && extensionStatus && installedExtVersion && (
                                                         <div className={`mt-1.5 px-2 py-1 rounded-md text-[10px] font-semibold flex items-center justify-between ${installedExtVersion === REQUIRED_EXT_VERSION && duplicateExtCount <= 1 ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400'}`}>
@@ -3500,9 +3584,9 @@ Input:
                                                     onClick={async () => {
                                                         setShowUserDropdown(false);
                                                         try {
-                                                            const res = await fetch(`/api/extension-download?format=base64&v=3.4&t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
+                                                            const res = await fetch(`/api/extension-download?format=base64&v=3.5&t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
                                                             const payload = await res.json();
-                                                            if (!payload?.ok || !payload.base64) throw new Error('Không thể tải Extension v3.4');
+                                                            if (!payload?.ok || !payload.base64) throw new Error('Không thể tải Extension v3.5');
                                                             const bin = window.atob(payload.base64);
                                                             const bytes = new Uint8Array(bin.length);
                                                             for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -3511,7 +3595,7 @@ Input:
                                                             const url = URL.createObjectURL(blob);
                                                             const a = document.createElement('a');
                                                             a.href = url;
-                                                            a.download = 'fb-tool-ext-v3.4.zip';
+                                                            a.download = 'fb-tool-ext-v3.5.zip';
                                                             document.body.appendChild(a);
                                                             a.click();
                                                             document.body.removeChild(a);
@@ -3521,7 +3605,7 @@ Input:
                                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-primary hover:bg-primary/5 text-left font-bold transition-all"
                                                 >
                                                     <span className="material-symbols-outlined text-base text-primary">extension</span>
-                                                    Tải Extension v3.4 (.zip)
+                                                    Tải Extension v3.5 (.zip)
                                                 </button>
 
                                                 <button 
@@ -4950,14 +5034,14 @@ Input:
                 setIsDownloading(true);
                 setDownloadError('');
                 setDownloadSuccess('');
-                const filename = 'fb-tool-ext-v3.4.zip';
+                const filename = 'fb-tool-ext-v3.5.zip';
 
                 try {
                     let zipBytes = null;
 
                     // Channel 1: Direct binary fetch inside authenticated session
                     try {
-                        const res = await fetch(`/ext-download/fb-tool-ext.zip?v=3.4&t=${Date.now()}`, {
+                        const res = await fetch(`/ext-download/fb-tool-ext.zip?v=3.5&t=${Date.now()}`, {
                             credentials: 'include',
                             cache: 'no-store',
                         });
@@ -4974,7 +5058,7 @@ Input:
 
                     // Channel 2: JSON Base64 API fallback (immune to binary proxy/HTML interception)
                     if (!zipBytes) {
-                        const apiRes = await fetch(`/api/extension-download?format=base64&v=3.4&t=${Date.now()}`, {
+                        const apiRes = await fetch(`/api/extension-download?format=base64&v=3.5&t=${Date.now()}`, {
                             credentials: 'include',
                             cache: 'no-store',
                         });
@@ -5005,7 +5089,7 @@ Input:
                     setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
 
                     const kb = Math.max(1, Math.round(zipBytes.length / 1024));
-                    const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v3.4 rồi cài vào chrome://extensions.`;
+                    const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v3.5 rồi cài vào chrome://extensions.`;
                     setDownloadSuccess(successMsg);
                     if (showToast) {
                         showToast(successMsg, 'success');
@@ -5101,7 +5185,7 @@ Input:
                                                     </span>
                                                     <span>{isDownloading ? 'Đang kiểm tra & tải...' : t('ext_download_btn')}</span>
                                                     {!isDownloading && (
-                                                        <span className="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded shrink-0">v3.4</span>
+                                                        <span className="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded shrink-0">v3.5</span>
                                                     )}
                                                 </button>
                                                 <button

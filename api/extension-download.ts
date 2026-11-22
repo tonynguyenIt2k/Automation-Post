@@ -3,7 +3,7 @@ import path from 'path';
 import type { ApiRequest, ApiResponse } from './_types';
 import { getQueryParam } from './_types';
 
-export const EXTENSION_VERSION = '3.4';
+export const EXTENSION_VERSION = '3.5';
 export const EXTENSION_FILENAME = `fb-tool-ext-v${EXTENSION_VERSION}.zip`;
 
 export function isValidZipBuffer(buf: Buffer): boolean {
