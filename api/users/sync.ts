@@ -1,5 +1,5 @@
-import { syncUser } from '../_store';
-import { getRequestBody, type ApiRequest, type ApiResponse } from '../_types';
+import { syncUser } from '../_store.js';
+import { getRequestBody, type ApiRequest, type ApiResponse } from '../_types.js';
 
 export default function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'POST') {

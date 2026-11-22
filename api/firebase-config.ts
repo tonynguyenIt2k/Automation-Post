@@ -1,5 +1,5 @@
-import { getFirebaseEnvConfig } from './_store';
-import type { ApiRequest, ApiResponse } from './_types';
+import { getFirebaseEnvConfig } from './_store.js';
+import type { ApiRequest, ApiResponse } from './_types.js';
 
 export default function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'GET') {

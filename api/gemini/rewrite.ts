@@ -1,5 +1,5 @@
-import { rewritePostWithGemini } from '../_gemini';
-import { getRequestBody, type ApiRequest, type ApiResponse } from '../_types';
+import { rewritePostWithGemini } from '../_gemini.js';
+import { getRequestBody, type ApiRequest, type ApiResponse } from '../_types.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'POST') {

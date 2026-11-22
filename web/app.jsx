@@ -49,6 +49,109 @@
             return { auth: null, rtdb: null };
         }
 
+        // Validate binary ZIP signatures: Local File Header (PK\x03\x04) + End of Central Directory (PK\x05\x06)
+        function isValidZipBytes(bytes) {
+            if (!bytes || bytes.length < 22) return false;
+            if (bytes[0] !== 0x50 || bytes[1] !== 0x4b || bytes[2] !== 0x03 || bytes[3] !== 0x04) {
+                return false;
+            }
+            const searchStart = Math.max(0, bytes.length - 65557);
+            for (let i = bytes.length - 22; i >= searchStart; i--) {
+                if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function decodeBase64ToBytes(base64) {
+            const binaryStr = window.atob(base64);
+            const len = binaryStr.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        // Resilient 3-channel Extension ZIP downloader (works on Vercel Edge CDN, Vercel API, and local/iframe preview)
+        async function downloadExtensionZip(version = '3.5') {
+            const filename = `fb-tool-ext-v${version}.zip`;
+            const cacheBust = `v=${encodeURIComponent(version)}&t=${Date.now()}`;
+            let zipBytes = null;
+
+            // Channel 1 (Primary): Direct static file on CDN / web root (zero serverless overhead on Vercel)
+            try {
+                const res = await fetch(`/ext-download/fb-tool-ext.zip?${cacheBust}`, {
+                    credentials: 'include',
+                    cache: 'no-store',
+                });
+                if (res.ok) {
+                    const candidate = new Uint8Array(await res.arrayBuffer());
+                    if (isValidZipBytes(candidate)) {
+                        zipBytes = candidate;
+                    }
+                }
+            } catch (_) {}
+
+            // Channel 2 (Fallback): JSON Base64 API (guarded by Content-Type to prevent JSON parse errors on 500 text/HTML)
+            if (!zipBytes) {
+                try {
+                    const apiRes = await fetch(`/api/extension-download?format=base64&${cacheBust}`, {
+                        credentials: 'include',
+                        cache: 'no-store',
+                    });
+                    const contentType = (apiRes.headers.get('content-type') || '').toLowerCase();
+                    if (apiRes.ok && contentType.includes('application/json')) {
+                        const payload = await apiRes.json();
+                        if (payload && payload.ok && typeof payload.base64 === 'string') {
+                            const decoded = decodeBase64ToBytes(payload.base64);
+                            if (isValidZipBytes(decoded)) {
+                                zipBytes = decoded;
+                            }
+                        }
+                    }
+                } catch (_) {}
+            }
+
+            // Channel 3 (Fallback): Direct Binary API stream
+            if (!zipBytes) {
+                try {
+                    const binRes = await fetch(`/api/extension-download?${cacheBust}`, {
+                        credentials: 'include',
+                        cache: 'no-store',
+                    });
+                    if (binRes.ok) {
+                        const candidate = new Uint8Array(await binRes.arrayBuffer());
+                        if (isValidZipBytes(candidate)) {
+                            zipBytes = candidate;
+                        }
+                    }
+                } catch (_) {}
+            }
+
+            if (!zipBytes) {
+                throw new Error(`Không thể tải gói Extension v${version} hợp lệ. Vui lòng thử tải lại trang.`);
+            }
+
+            const blob = new Blob([zipBytes], { type: 'application/zip' });
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+            return {
+                filename,
+                sizeBytes: zipBytes.length,
+                kb: Math.max(1, Math.round(zipBytes.length / 1024)),
+            };
+        }
+
         // ========================================
         // Contexts & Global State
         // ========================================
@@ -3098,23 +3201,8 @@ Input:
                                                         type="button"
                                                         onClick={async () => {
                                                             try {
-                                                                const res = await fetch(`/api/extension-download?format=base64&v=3.5&t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
-                                                                const payload = await res.json();
-                                                                if (!payload?.ok || !payload.base64) throw new Error('Không thể tải Extension v3.5');
-                                                                const bin = window.atob(payload.base64);
-                                                                const bytes = new Uint8Array(bin.length);
-                                                                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                                                                if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) throw new Error('Tệp ZIP không hợp lệ');
-                                                                const blob = new Blob([bytes], { type: 'application/zip' });
-                                                                const url = URL.createObjectURL(blob);
-                                                                const a = document.createElement('a');
-                                                                a.href = url;
-                                                                a.download = 'fb-tool-ext-v3.5.zip';
-                                                                document.body.appendChild(a);
-                                                                a.click();
-                                                                document.body.removeChild(a);
-                                                                setTimeout(() => URL.revokeObjectURL(url), 5000);
-                                                                showToast('Đã tải fb-tool-ext-v3.5.zip! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.5.', 'success');
+                                                                const { filename, kb } = await downloadExtensionZip('3.5');
+                                                                showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.5.`, 'success');
                                                             } catch (e) {
                                                                 showToast(e?.message || 'Lỗi tải Extension v3.5', 'error');
                                                             }
@@ -3584,23 +3672,11 @@ Input:
                                                     onClick={async () => {
                                                         setShowUserDropdown(false);
                                                         try {
-                                                            const res = await fetch(`/api/extension-download?format=base64&v=3.5&t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
-                                                            const payload = await res.json();
-                                                            if (!payload?.ok || !payload.base64) throw new Error('Không thể tải Extension v3.5');
-                                                            const bin = window.atob(payload.base64);
-                                                            const bytes = new Uint8Array(bin.length);
-                                                            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                                                            if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) throw new Error('Tệp ZIP không hợp lệ');
-                                                            const blob = new Blob([bytes], { type: 'application/zip' });
-                                                            const url = URL.createObjectURL(blob);
-                                                            const a = document.createElement('a');
-                                                            a.href = url;
-                                                            a.download = 'fb-tool-ext-v3.5.zip';
-                                                            document.body.appendChild(a);
-                                                            a.click();
-                                                            document.body.removeChild(a);
-                                                            setTimeout(() => URL.revokeObjectURL(url), 5000);
-                                                        } catch (_) {}
+                                                            const { filename, kb } = await downloadExtensionZip('3.5');
+                                                            showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.5.`, 'success');
+                                                        } catch (e) {
+                                                            showToast(e?.message || 'Lỗi tải Extension v3.5', 'error');
+                                                        }
                                                     }}
                                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-primary hover:bg-primary/5 text-left font-bold transition-all"
                                                 >
@@ -5003,92 +5079,15 @@ Input:
                 }
             };
 
-            // Validate binary ZIP signatures: Local File Header (PK\x03\x04) + End of Central Directory (PK\x05\x06)
-            const isValidZipBytes = (bytes) => {
-                if (!bytes || bytes.length < 22) return false;
-                if (bytes[0] !== 0x50 || bytes[1] !== 0x4b || bytes[2] !== 0x03 || bytes[3] !== 0x04) {
-                    return false;
-                }
-                const searchStart = Math.max(0, bytes.length - 65557);
-                for (let i = bytes.length - 22; i >= searchStart; i--) {
-                    if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) {
-                        return true;
-                    }
-                }
-                return false;
-            };
-
-            const decodeBase64ToBytes = (base64) => {
-                const binaryStr = window.atob(base64);
-                const len = binaryStr.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binaryStr.charCodeAt(i);
-                }
-                return bytes;
-            };
-
-            // Smart verified ZIP download: prevents Chrome/AI Studio iframe from saving HTML pages as .zip
+            // Smart verified ZIP download: prevents Chrome/AI Studio iframe or Vercel 500 text from corrupting .zip
             const handleDownloadExtension = async () => {
                 if (isDownloading) return;
                 setIsDownloading(true);
                 setDownloadError('');
                 setDownloadSuccess('');
-                const filename = 'fb-tool-ext-v3.5.zip';
 
                 try {
-                    let zipBytes = null;
-
-                    // Channel 1: Direct binary fetch inside authenticated session
-                    try {
-                        const res = await fetch(`/ext-download/fb-tool-ext.zip?v=3.5&t=${Date.now()}`, {
-                            credentials: 'include',
-                            cache: 'no-store',
-                        });
-                        if (res.ok) {
-                            const buf = await res.arrayBuffer();
-                            const candidate = new Uint8Array(buf);
-                            if (isValidZipBytes(candidate)) {
-                                zipBytes = candidate;
-                            }
-                        }
-                    } catch (_) {
-                        // Fall through to Base64 JSON API channel
-                    }
-
-                    // Channel 2: JSON Base64 API fallback (immune to binary proxy/HTML interception)
-                    if (!zipBytes) {
-                        const apiRes = await fetch(`/api/extension-download?format=base64&v=3.5&t=${Date.now()}`, {
-                            credentials: 'include',
-                            cache: 'no-store',
-                        });
-                        if (apiRes.ok) {
-                            const payload = await apiRes.json();
-                            if (payload && payload.ok && typeof payload.base64 === 'string') {
-                                const decoded = decodeBase64ToBytes(payload.base64);
-                                if (isValidZipBytes(decoded)) {
-                                    zipBytes = decoded;
-                                }
-                            }
-                        }
-                    }
-
-                    if (!zipBytes) {
-                        throw new Error('Dữ liệu tải về không đúng định dạng tệp nén ZIP hợp lệ. Vui lòng thử tải lại trang.');
-                    }
-
-                    const blob = new Blob([zipBytes], { type: 'application/zip' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = blobUrl;
-                    link.download = filename;
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-
-                    const kb = Math.max(1, Math.round(zipBytes.length / 1024));
+                    const { filename, kb } = await downloadExtensionZip('3.5');
                     const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v3.5 rồi cài vào chrome://extensions.`;
                     setDownloadSuccess(successMsg);
                     if (showToast) {

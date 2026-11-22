@@ -1,6 +1,6 @@
-import { createGeminiClient } from './_gemini';
-import { getFirebaseEnvConfig } from './_store';
-import type { ApiRequest, ApiResponse } from './_types';
+import { createGeminiClient } from './_gemini.js';
+import { getFirebaseEnvConfig } from './_store.js';
+import type { ApiRequest, ApiResponse } from './_types.js';
 
 export default function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'GET') {

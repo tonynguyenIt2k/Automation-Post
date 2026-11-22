@@ -1,5 +1,5 @@
-import { updateAdminUser } from '../../_store';
-import { getQueryParam, getRequestBody, type ApiRequest, type ApiResponse } from '../../_types';
+import { updateAdminUser } from '../../_store.js';
+import { getQueryParam, getRequestBody, type ApiRequest, type ApiResponse } from '../../_types.js';
 
 export default function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'PUT') {

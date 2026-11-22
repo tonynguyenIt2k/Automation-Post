@@ -3,7 +3,7 @@ import {
   resolveGeminiModel,
   cleanAiRewriteOutput,
   formatSalesContent,
-} from '../src/utils/autopost';
+} from '../src/utils/autopost.js';
 
 export interface CopywritingAngle {
   id: string;

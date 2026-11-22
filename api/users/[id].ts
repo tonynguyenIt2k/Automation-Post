@@ -1,5 +1,5 @@
-import { getUserById } from '../_store';
-import { getQueryParam, type ApiRequest, type ApiResponse } from '../_types';
+import { getUserById } from '../_store.js';
+import { getQueryParam, type ApiRequest, type ApiResponse } from '../_types.js';
 
 export default function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'GET') {

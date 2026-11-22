@@ -1,4 +1,4 @@
-import { calculateSubscriptionExpiry } from '../src/utils/autopost';
+import { calculateSubscriptionExpiry } from '../src/utils/autopost.js';
 
 export interface SubscriptionHistoryEntry {
   id: number;
