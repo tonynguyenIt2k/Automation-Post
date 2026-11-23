@@ -31,6 +31,7 @@ export interface UserSubscription {
   plan: 'free' | 'pro' | 'enterprise';
   expiresAt: string | null;
   status: 'active' | 'pending' | 'expired';
+  isLifetime?: boolean;
   pendingPlan?: string | null;
   pendingMonths?: number | null;
   history: SubscriptionHistoryEntry[];
@@ -67,6 +68,43 @@ export const DEFAULT_FIREBASE_CONFIG = {
 };
 
 export const OWNER_ADMIN_EMAILS = ['hungboa5075@gmail.com', 'admin@autopost.local'];
+export const OWNER_ADMIN_UIDS = ['112937746933560753066', '113264177727144211176', 'demo-admin-01'];
+
+function isAdminIdentity(role: string | undefined, email?: string, id?: string): boolean {
+  if (role === 'admin') return true;
+  if (email && OWNER_ADMIN_EMAILS.includes(email.toLowerCase())) return true;
+  if (id && OWNER_ADMIN_UIDS.includes(id)) return true;
+  return false;
+}
+
+function enforceAdminProSubscription(
+  role: 'user' | 'admin',
+  sub?: UserSubscription,
+): UserSubscription {
+  const base: UserSubscription = sub || {
+    plan: 'free',
+    expiresAt: null,
+    status: 'active',
+    history: [],
+  };
+  if (role === 'admin') {
+    return {
+      ...base,
+      plan: 'pro',
+      status: 'active',
+      expiresAt: null,
+      isLifetime: true,
+      pendingPlan: null,
+      pendingMonths: null,
+      history: Array.isArray(base.history) ? base.history : [],
+    };
+  }
+  return {
+    ...base,
+    isLifetime: false,
+    history: Array.isArray(base.history) ? base.history : [],
+  };
+}
 
 export function getFirebaseEnvConfig() {
   if (process.env.DISABLE_FIREBASE === 'true') {
@@ -102,23 +140,15 @@ const usersStore = new Map<string, StoredUser>([
       id: 'demo-admin-01',
       name: 'Quản trị viên AutoPost',
       email: 'admin@autopost.local',
-      picture: 'https://ui-avatars.com/api/?name=Admin+Pro&background=2563eb&color=ffffff',
+      picture: '',
       role: 'admin',
       createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
       subscription: {
-        plan: 'enterprise',
-        expiresAt: new Date(Date.now() + 86400000 * 180).toISOString(),
+        plan: 'pro',
+        expiresAt: null,
         status: 'active',
-        history: [
-          {
-            id: 1700000001,
-            plan: 'enterprise',
-            months: 6,
-            date: new Date(Date.now() - 86400000 * 10).toISOString(),
-            status: 'approved',
-            amount: 2994000,
-          },
-        ],
+        isLifetime: true,
+        history: [],
       },
     },
   ],
@@ -128,7 +158,7 @@ const usersStore = new Map<string, StoredUser>([
       id: 'demo-user-pending-02',
       name: 'Nguyễn Minh Quân',
       email: 'minhquan.mkt@gmail.com',
-      picture: 'https://ui-avatars.com/api/?name=Minh+Quan&background=0f766e&color=ffffff',
+      picture: '',
       role: 'user',
       createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
       subscription: {
@@ -156,7 +186,7 @@ const usersStore = new Map<string, StoredUser>([
       id: 'demo-user-pro-03',
       name: 'Trần Thu Hà',
       email: 'thuha.shop@gmail.com',
-      picture: 'https://ui-avatars.com/api/?name=Thu+Ha&background=7c3aed&color=ffffff',
+      picture: '',
       role: 'user',
       createdAt: new Date(Date.now() - 86400000 * 18).toISOString(),
       subscription: {
@@ -198,12 +228,22 @@ export function updateSettings(body: Record<string, unknown>): SystemSettings {
   return systemSettings;
 }
 
+function normalizeStoredUser(user: StoredUser): StoredUser {
+  const role: 'user' | 'admin' = isAdminIdentity(user.role, user.email, user.id) ? 'admin' : 'user';
+  return {
+    ...user,
+    role,
+    subscription: enforceAdminProSubscription(role, user.subscription),
+  };
+}
+
 export function getUserById(id: string): StoredUser | undefined {
-  return usersStore.get(id);
+  const found = usersStore.get(id);
+  return found ? normalizeStoredUser(found) : undefined;
 }
 
 export function listUsers(): StoredUser[] {
-  return Array.from(usersStore.values());
+  return Array.from(usersStore.values()).map(normalizeStoredUser);
 }
 
 export function syncUser(body: Record<string, unknown>): StoredUser | null {
@@ -212,26 +252,32 @@ export function syncUser(body: Record<string, unknown>): StoredUser | null {
 
   const existing = usersStore.get(id);
   const resolvedEmail = String(body.email || existing?.email || 'user@autopost.local');
-  const isOwnerAdmin = OWNER_ADMIN_EMAILS.includes(resolvedEmail.toLowerCase());
+  const resolvedRole: 'user' | 'admin' = isAdminIdentity(
+    existing?.role || (body.role === 'admin' ? 'admin' : 'user'),
+    resolvedEmail,
+    id,
+  )
+    ? 'admin'
+    : 'user';
   const rawName = String(body.name || existing?.name || 'Người dùng AutoPost');
+
+  const rawSubscription =
+    (body.subscription as UserSubscription | undefined) ||
+    existing?.subscription || {
+      plan: 'free',
+      expiresAt: null,
+      status: 'active',
+      history: [],
+    };
 
   const merged: StoredUser = {
     id,
     name: rawName,
     email: resolvedEmail,
-    picture:
-      String(body.picture || existing?.picture || '') ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(rawName || 'U')}&background=2563eb&color=fff`,
-    role: isOwnerAdmin ? 'admin' : existing?.role || (body.role === 'admin' ? 'admin' : 'user'),
+    picture: String(body.picture || existing?.picture || ''),
+    role: resolvedRole,
     createdAt: existing?.createdAt || new Date().toISOString(),
-    subscription:
-      (body.subscription as UserSubscription | undefined) ||
-      existing?.subscription || {
-        plan: 'free',
-        expiresAt: null,
-        status: 'active',
-        history: [],
-      },
+    subscription: enforceAdminProSubscription(resolvedRole, rawSubscription),
     collections: Array.isArray(body.collections)
       ? (body.collections as Array<{ id: string; name: string; groupIds: string[] }>)
       : existing?.collections || [],
@@ -255,7 +301,7 @@ export function approveUserSubscription(id: string): StoredUser | null {
     h.status === 'pending' ? { ...h, status: 'approved', date: now.toISOString() } : h,
   );
 
-  user.subscription = {
+  user.subscription = enforceAdminProSubscription(user.role, {
     ...sub,
     plan: requestedPlan,
     status: 'active',
@@ -263,9 +309,9 @@ export function approveUserSubscription(id: string): StoredUser | null {
     pendingPlan: null,
     pendingMonths: null,
     history: updatedHistory,
-  };
+  });
   usersStore.set(user.id, user);
-  return user;
+  return normalizeStoredUser(user);
 }
 
 export function rejectUserSubscription(id: string): StoredUser | null {
@@ -278,7 +324,7 @@ export function rejectUserSubscription(id: string): StoredUser | null {
     h.status === 'pending' ? { ...h, status: 'rejected', date: now.toISOString() } : h,
   );
 
-  user.subscription = {
+  user.subscription = enforceAdminProSubscription(user.role, {
     ...sub,
     status:
       sub.plan !== 'free' && sub.expiresAt && new Date(sub.expiresAt) <= now
@@ -287,14 +333,25 @@ export function rejectUserSubscription(id: string): StoredUser | null {
     pendingPlan: null,
     pendingMonths: null,
     history: updatedHistory,
-  };
+  });
   usersStore.set(user.id, user);
-  return user;
+  return normalizeStoredUser(user);
 }
 
 export function updateAdminUser(id: string, body: Record<string, unknown>): StoredUser | null {
   const user = usersStore.get(id);
   if (!user) return null;
+
+  const isOwner = isAdminIdentity(undefined, user.email, user.id);
+  const role: 'user' | 'admin' = isOwner || body.role === 'admin' ? 'admin' : 'user';
+  const now = new Date();
+
+  if (role === 'admin') {
+    user.role = 'admin';
+    user.subscription = enforceAdminProSubscription('admin', user.subscription);
+    usersStore.set(user.id, user);
+    return normalizeStoredUser(user);
+  }
 
   const rawPlan = String(body.plan || 'free');
   const plan: 'free' | 'pro' | 'enterprise' =
@@ -302,9 +359,7 @@ export function updateAdminUser(id: string, body: Record<string, unknown>): Stor
   const rawStatus = String(body.status || 'active');
   const status: 'active' | 'pending' | 'expired' =
     rawStatus === 'pending' || rawStatus === 'expired' ? rawStatus : 'active';
-  const role = body.role === 'admin' ? 'admin' : 'user';
   const safeMonths = Math.max(1, Math.min(36, parseInt(String(body.months ?? 1), 10) || 1));
-  const now = new Date();
   const expiresAt = plan !== 'free' ? calculateSubscriptionExpiry(null, safeMonths, now) : null;
 
   const historyEntry: SubscriptionHistoryEntry = {
@@ -323,11 +378,12 @@ export function updateAdminUser(id: string, body: Record<string, unknown>): Stor
     plan,
     status,
     expiresAt,
+    isLifetime: false,
     pendingPlan: null,
     pendingMonths: null,
     history: [historyEntry, ...(user.subscription.history || [])],
   };
 
   usersStore.set(user.id, user);
-  return user;
+  return normalizeStoredUser(user);
 }

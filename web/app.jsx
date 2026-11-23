@@ -1198,18 +1198,67 @@ Input:
                 };
             }, [googleUser, firebaseReady]);
 
+            // Effective subscription: Admin accounts are always Pro permanently (no renewal needed)
+            const effectiveSubscription = useMemo(() => {
+                if (userRole === 'admin') {
+                    return {
+                        ...(subscription || { history: [] }),
+                        plan: 'pro',
+                        status: 'active',
+                        expiresAt: null,
+                        isLifetime: true,
+                        pendingPlan: null,
+                        pendingMonths: null,
+                        history: Array.isArray(subscription?.history) ? subscription.history : []
+                    };
+                }
+                return subscription;
+            }, [userRole, subscription]);
+
+            // Ensure admin RTDB subscription stays Pro lifetime if synced
+            useEffect(() => {
+                if (userRole !== 'admin' || !googleUser || !googleUser.sub) return;
+                const needsSync =
+                    subscription?.plan !== 'pro' ||
+                    subscription?.status !== 'active' ||
+                    subscription?.expiresAt !== null ||
+                    !subscription?.isLifetime;
+                if (!needsSync) return;
+
+                const permanentAdminSub = {
+                    ...(subscription || { history: [] }),
+                    plan: 'pro',
+                    status: 'active',
+                    expiresAt: null,
+                    isLifetime: true,
+                    pendingPlan: null,
+                    pendingMonths: null,
+                    history: Array.isArray(subscription?.history) ? subscription.history : []
+                };
+                setSubscription(permanentAdminSub);
+                storage.set('subscription', permanentAdminSub);
+
+                if (rtdb && auth && auth.currentUser && googleUser.isFirebaseAuth) {
+                    rtdb.ref('users/' + googleUser.sub + '/subscription').set(permanentAdminSub).catch(() => {});
+                }
+            }, [userRole, googleUser, firebaseReady]);
+
             // Subscription helpers
             const getSubscriptionDaysLeft = useCallback(() => {
-                if (!subscription.expiresAt) return 0;
+                if (userRole === 'admin') return 999999;
+                if (!effectiveSubscription.expiresAt) return 0;
                 const now = new Date();
-                const exp = new Date(subscription.expiresAt);
+                const exp = new Date(effectiveSubscription.expiresAt);
                 const diff = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
                 return Math.max(0, diff);
-            }, [subscription.expiresAt]);
+            }, [userRole, effectiveSubscription.expiresAt]);
 
             const getSubscriptionTimeLeft = useCallback(() => {
-                if (!subscription.expiresAt || subscription.status === 'expired') return { days: 0, hours: 0, text: 'Hết hạn' };
-                const exp = new Date(subscription.expiresAt);
+                if (userRole === 'admin') {
+                    return { days: Infinity, hours: 0, text: 'Vĩnh viễn (Admin)', isLifetime: true };
+                }
+                if (!effectiveSubscription.expiresAt || effectiveSubscription.status === 'expired') return { days: 0, hours: 0, text: 'Hết hạn' };
+                const exp = new Date(effectiveSubscription.expiresAt);
                 const diffMs = exp - new Date();
                 if (diffMs <= 0) return { days: 0, hours: 0, text: 'Hết hạn' };
                 
@@ -1223,18 +1272,23 @@ Input:
                 }
                 text += `${hours} giờ`;
                 return { days, hours, text };
-            }, [subscription.expiresAt, subscription.status]);
+            }, [userRole, effectiveSubscription.expiresAt, effectiveSubscription.status]);
 
             const isSubscriptionActive = useCallback(() => {
-                if (subscription.plan === 'free') return true;
-                if (subscription.status === 'expired') return false;
+                if (userRole === 'admin') return true;
+                if (effectiveSubscription.plan === 'free') return true;
+                if (effectiveSubscription.status === 'expired') return false;
                 const daysLeft = getSubscriptionDaysLeft();
                 return daysLeft > 0;
-            }, [subscription.plan, subscription.status, getSubscriptionDaysLeft]);
+            }, [userRole, effectiveSubscription.plan, effectiveSubscription.status, getSubscriptionDaysLeft]);
 
             const handleSelectPlan = useCallback((plan) => {
                 if (!googleUser) {
                     showToast(t('sub_require_login'), 'error');
+                    return;
+                }
+                if (userRole === 'admin') {
+                    showToast('Tài khoản Admin luôn mặc định gói Pro vĩnh viễn, không cần gia hạn.', 'info');
                     return;
                 }
                 if (plan === 'free') {
@@ -1263,7 +1317,7 @@ Input:
                 }
                 setSelectedPlan(plan);
                 setShowPaymentModal(true);
-            }, [googleUser, subscription, t]);
+            }, [googleUser, userRole, subscription, t]);
 
             const handleConfirmPayment = useCallback((months = 1) => {
                 const now = new Date();
@@ -1321,8 +1375,9 @@ Input:
                 setShowPaymentModal(false);
             }, [selectedPlan, subscription, googleUser]);
 
-            // Auto-check subscription expiry
+            // Auto-check subscription expiry (Admin accounts never expire)
             useEffect(() => {
+                if (userRole === 'admin') return;
                 if (subscription.expiresAt && subscription.plan !== 'free') {
                     const daysLeft = getSubscriptionDaysLeft();
                     if (daysLeft <= 0 && subscription.status !== 'expired') {
@@ -1336,7 +1391,7 @@ Input:
                         showToast(`Gói ${subscription.plan.toUpperCase()} sắp hết hạn! Còn ${daysLeft} ngày.`, 'warning');
                     }
                 }
-            }, []);
+            }, [userRole]);
 
             useEffect(() => { storage.set('subscription', subscription); }, [subscription]);
 
@@ -2328,12 +2383,14 @@ Input:
                 if (selectedPosts.size === 0) return showToast('Vui lòng chọn ít nhất 1 bài viết!', 'error');
                 if (selectedGroups.size === 0) return showToast('Vui lòng chọn ít nhất 1 nhóm!', 'error');
 
-                // Subscription Check
-                if (subscription.plan === 'free' && selectedGroups.size > 3) {
-                    return showToast('Gói MIỄN PHÍ chỉ được chọn tối đa 3 nhóm. Vui lòng nâng cấp!', 'error');
-                }
-                if (subscription.plan !== 'free' && !isSubscriptionActive()) {
-                    return showToast('Gói dịch vụ đã hết hạn. Vui lòng gia hạn để tiếp tục!', 'error');
+                // Subscription Check (Admin accounts are permanently Pro)
+                if (userRole !== 'admin') {
+                    if (effectiveSubscription.plan === 'free' && selectedGroups.size > 3) {
+                        return showToast('Gói MIỄN PHÍ chỉ được chọn tối đa 3 nhóm. Vui lòng nâng cấp!', 'error');
+                    }
+                    if (effectiveSubscription.plan !== 'free' && !isSubscriptionActive()) {
+                        return showToast('Gói dịch vụ đã hết hạn. Vui lòng gia hạn để tiếp tục!', 'error');
+                    }
                 }
 
                 stopSharingRef.current = false;
@@ -3014,12 +3071,14 @@ Input:
                     return showToast('Vui lòng chọn ít nhất 1 nhóm!', 'error');
                 }
 
-                // Subscription Check
-                if (subscription.plan === 'free' && selectedGroups.size > 3) {
-                    return showToast('Gói MIỄN PHÍ chỉ được chọn tối đa 3 nhóm. Vui lòng nâng cấp!', 'error');
-                }
-                if (subscription.plan !== 'free' && !isSubscriptionActive()) {
-                    return showToast('Gói dịch vụ đã hết hạn. Vui lòng gia hạn để tiếp tục!', 'error');
+                // Subscription Check (Admin accounts are permanently Pro)
+                if (userRole !== 'admin') {
+                    if (effectiveSubscription.plan === 'free' && selectedGroups.size > 3) {
+                        return showToast('Gói MIỄN PHÍ chỉ được chọn tối đa 3 nhóm. Vui lòng nâng cấp!', 'error');
+                    }
+                    if (effectiveSubscription.plan !== 'free' && !isSubscriptionActive()) {
+                        return showToast('Gói dịch vụ đã hết hạn. Vui lòng gia hạn để tiếp tục!', 'error');
+                    }
                 }
 
                 stopPostingRef.current = false;
@@ -3304,7 +3363,7 @@ Input:
                                             googleUser={googleUser} 
                                             onGoogleLogin={handleGoogleLogin} 
                                             onGoogleLogout={handleGoogleLogout} 
-                                            subscription={subscription} 
+                                            subscription={effectiveSubscription} 
                                             userRole={userRole} 
                                             setActivePage={setActivePage} 
                                             getSubscriptionTimeLeft={getSubscriptionTimeLeft}
@@ -3347,8 +3406,10 @@ Input:
                                                         {!sidebarCollapsed && (
                                                             <div className="flex flex-col">
                                                                 <span className="font-medium text-sm whitespace-nowrap">{t('nav_subscription')}</span>
-                                                                {subscription.plan !== 'free' && isSubscriptionActive() && (
-                                                                    <span className={`text-[9px] font-bold uppercase tracking-wider ${activePage === 'subscription' ? 'text-white/70' : 'text-amber-500'}`}>{subscription.plan}</span>
+                                                                {effectiveSubscription.plan !== 'free' && isSubscriptionActive() && (
+                                                                    <span className={`text-[9px] font-bold uppercase tracking-wider ${activePage === 'subscription' ? 'text-white/70' : 'text-amber-500'}`}>
+                                                                        {userRole === 'admin' ? 'PRO · Vĩnh viễn' : effectiveSubscription.plan}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         )}
@@ -3634,7 +3695,8 @@ Input:
                                                     <SubscriptionPage
                                                         t={t}
                                                         googleUser={googleUser}
-                                                        subscription={subscription}
+                                                        userRole={userRole}
+                                                        subscription={effectiveSubscription}
                                                         onGoogleLogin={handleGoogleLogin}
                                                         onGoogleLogout={handleGoogleLogout}
                                                         onSelectPlan={handleSelectPlan}
@@ -3647,7 +3709,7 @@ Input:
                                                     <PaymentModal
                                                         t={t}
                                                         plan={selectedPlan}
-                                                        subscription={subscription}
+                                                        subscription={effectiveSubscription}
                                                         isSubscriptionActive={isSubscriptionActive}
                                                         onConfirm={handleConfirmPayment}
                                                         onClose={() => setShowPaymentModal(false)}
@@ -3713,7 +3775,9 @@ Input:
                 };
             }, [dropdownRef]);
 
+            const isAdminLifetime = userRole === 'admin';
             const isSubscriptionActive = () => {
+                if (isAdminLifetime) return true;
                 if (subscription.plan === 'free') return true;
                 if (subscription.status === 'expired') return false;
                 if (!subscription.expiresAt) return false;
@@ -3742,24 +3806,26 @@ Input:
                                 {googleUser && (
                                     <div className="flex items-center gap-1.5 sm:gap-2">
                                         <a href="/pricing" className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-sm transition-all duration-300 ${
-                                            subscription.plan === 'pro' 
+                                            (isAdminLifetime || subscription.plan === 'pro')
                                                 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20' 
                                                 : subscription.plan === 'enterprise' 
                                                     ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20' 
                                                     : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                                         }`}>
                                             <span className="material-symbols-outlined text-[13px]" style={{fontVariationSettings: '"FILL" 1'}}>workspace_premium</span>
-                                            <span>{(subscription.plan || 'free').toUpperCase()}</span>
+                                            <span>{isAdminLifetime ? 'PRO' : (subscription.plan || 'free').toUpperCase()}</span>
                                         </a>
 
-                                        {subscription.plan !== 'free' && (
+                                        {(isAdminLifetime || subscription.plan !== 'free') && (
                                             <div className="text-[10px] sm:text-[11px] font-semibold flex items-center gap-1 bg-slate-50 dark:bg-slate-800/40 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400">
-                                                <span className={`material-symbols-outlined text-[12px] ${isSubscriptionActive() ? 'text-primary animate-pulse' : 'text-rose-500'}`}>
-                                                    {isSubscriptionActive() ? 'schedule' : 'error'}
+                                                <span className={`material-symbols-outlined text-[12px] ${isAdminLifetime ? 'text-emerald-600 dark:text-emerald-400' : isSubscriptionActive() ? 'text-primary' : 'text-rose-500'}`}>
+                                                    {isAdminLifetime ? 'all_inclusive' : isSubscriptionActive() ? 'schedule' : 'error'}
                                                 </span>
-                                                <span className="hidden sm:inline">{isSubscriptionActive() ? 'Còn: ' : 'Trạng thái: '}</span>
-                                                <strong className={isSubscriptionActive() ? 'text-slate-700 dark:text-slate-200' : 'text-rose-600 dark:text-rose-400 font-black'}>
-                                                    {getSubscriptionTimeLeft().text}
+                                                {!isAdminLifetime && (
+                                                    <span className="hidden sm:inline">{isSubscriptionActive() ? 'Còn: ' : 'Trạng thái: '}</span>
+                                                )}
+                                                <strong className={isAdminLifetime ? 'text-emerald-700 dark:text-emerald-400' : isSubscriptionActive() ? 'text-slate-700 dark:text-slate-200' : 'text-rose-600 dark:text-rose-400 font-black'}>
+                                                    {isAdminLifetime ? 'Vĩnh viễn' : getSubscriptionTimeLeft().text}
                                                 </strong>
                                             </div>
                                         )}
@@ -5500,7 +5566,8 @@ Input:
             );
         }
 
-        function SubscriptionPage({ t, googleUser, subscription, onGoogleLogin, onGoogleLogout, onSelectPlan, getSubscriptionDaysLeft, isSubscriptionActive }) {
+        function SubscriptionPage({ t, googleUser, userRole, subscription, onGoogleLogin, onGoogleLogout, onSelectPlan, getSubscriptionDaysLeft, isSubscriptionActive }) {
+            const isAdminLifetime = userRole === 'admin';
             const plans = [
                 { id: 'free', name: t('sub_free'), price: '0đ', features: t('sub_features_free').split('|'), color: 'bg-slate-500' },
                 { id: 'pro', name: t('sub_pro'), price: '199.000đ', features: t('sub_features_pro').split('|'), color: 'bg-primary', popular: true },
@@ -5529,7 +5596,7 @@ Input:
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                             {(() => {
-                                const activeVisualPlan = isSubscriptionActive() ? subscription.plan : 'free';
+                                const activeVisualPlan = isAdminLifetime ? 'pro' : (isSubscriptionActive() ? subscription.plan : 'free');
                                 return plans.map(plan => (
                                     <div key={plan.id} className={`relative bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-card ring-1 ring-border-light/50 flex flex-col transition-all hover:shadow-soft hover:scale-[1.02] ${plan.popular ? 'ring-2 ring-primary shadow-glow' : ''}`}>
                                         {plan.popular && (
@@ -5553,7 +5620,11 @@ Input:
                                         {activeVisualPlan === plan.id ? (
                                             <button disabled className="w-full py-3 rounded-xl font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center justify-center gap-2">
                                                 <span className="material-symbols-outlined text-[18px]">verified</span>
-                                                {t('sub_current_plan')}
+                                                {isAdminLifetime && plan.id === 'pro' ? 'Admin Pro · Vĩnh viễn' : t('sub_current_plan')}
+                                            </button>
+                                        ) : isAdminLifetime ? (
+                                            <button disabled className="w-full py-3 rounded-xl font-semibold bg-slate-100 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400 cursor-not-allowed">
+                                                Tài khoản Admin mặc định Pro
                                             </button>
                                         ) : (
                                             <button onClick={() => onSelectPlan(plan.id)} className={`w-full py-3 rounded-xl font-bold text-white transition-all shadow-lg active:scale-95 ${plan.color}`}>
@@ -5566,21 +5637,27 @@ Input:
                         </div>
                     )}
 
-                    {googleUser && subscription.plan !== 'free' && (
+                    {googleUser && (isAdminLifetime || subscription.plan !== 'free') && (
                         <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-card ring-1 ring-border-light/50 mb-12">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
                                 <div>
                                     <h2 className="text-2xl font-bold text-text-main dark:text-white mb-1">{t('sub_plan_info')}</h2>
-                                    <div className="flex items-center gap-3">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${isSubscriptionActive() ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                                            {isSubscriptionActive() ? t('sub_active') : t('sub_expired')}
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${isSubscriptionActive() ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700'}`}>
+                                            {isAdminLifetime ? 'Admin Pro · Vĩnh viễn' : (isSubscriptionActive() ? t('sub_active') : t('sub_expired'))}
                                         </span>
-                                        <span className="text-text-secondary text-sm">{t('sub_expire_date')}: <b>{new Date(subscription.expiresAt).toLocaleDateString('vi-VN')}</b></span>
+                                        {isAdminLifetime ? (
+                                            <span className="text-text-secondary text-sm">Thời hạn: <b className="text-emerald-600 dark:text-emerald-400">Không giới hạn (Không cần gia hạn)</b></span>
+                                        ) : (
+                                            <span className="text-text-secondary text-sm">{t('sub_expire_date')}: <b>{subscription.expiresAt ? new Date(subscription.expiresAt).toLocaleDateString('vi-VN') : '—'}</b></span>
+                                        )}
                                     </div>
                                 </div>
-                                <button onClick={() => onSelectPlan(subscription.plan)} className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-lg shadow-amber-500/20 transition-all active:scale-95">
-                                    {t('sub_renew')}
-                                </button>
+                                {!isAdminLifetime && (
+                                    <button onClick={() => onSelectPlan(subscription.plan)} className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-lg shadow-amber-500/20 transition-all active:scale-95">
+                                        {t('sub_renew')}
+                                    </button>
+                                )}
                             </div>
 
                             <div className="border-t border-border-light pt-8">
