@@ -75,7 +75,7 @@
         }
 
         // Resilient 3-channel Extension ZIP downloader (works on Vercel Edge CDN, Vercel API, and local/iframe preview)
-        async function downloadExtensionZip(version = '3.6') {
+        async function downloadExtensionZip(version = '3.8') {
             const filename = `fb-tool-ext-v${version}.zip`;
             const cacheBust = `v=${encodeURIComponent(version)}&t=${Date.now()}`;
             let zipBytes = null;
@@ -650,9 +650,17 @@
                                         }} 
                                         className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-border-light dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-text-main dark:text-white shadow-sm text-xs cursor-pointer outline-none transition-colors"
                                     >
-                                        <option value="desktop">🖥️ Desktop Mode (Mô phỏng DOM)</option>
+                                        <option value="desktop">🕶️ Tab ngầm (Không chiếm màn hình - Mặc định)</option>
+                                        <option value="desktop_visible">🖥️ Hiển thị tab (Gỡ lỗi trực tiếp)</option>
                                         <option value="mobile">📱 Mobile Mode (Mbasic - Chạy ẩn)</option>
                                     </select>
+                                    <p className="mt-1.5 text-[11px] text-text-secondary leading-snug">
+                                        {(postMode || 'desktop') === 'desktop'
+                                            ? 'Tự mở tab ngầm riêng để đăng từng nhóm rồi tự đóng, không nhảy tab hay ảnh hưởng các công việc khác.'
+                                            : postMode === 'desktop_visible'
+                                                ? 'Hiển thị trực tiếp tab Facebook khi đăng để bạn theo dõi thao tác.'
+                                                : 'Gửi yêu cầu trực tiếp qua giao diện Mbasic không cần mở tab.'}
+                                    </p>
                                 </div>
                             </>
                         )}
@@ -895,7 +903,7 @@ Input:
             const [shareCaption, setShareCaption] = useState('');
             const [isScanning, setIsScanning] = useState(false);
             const [isScanningGroups, setIsScanningGroups] = useState(false); // Track group scan
-            const REQUIRED_EXT_VERSION = '3.6';
+            const REQUIRED_EXT_VERSION = '3.8';
             const [installedExtVersion, setInstalledExtVersion] = useState(() => (typeof document !== 'undefined' ? (document.documentElement?.dataset?.fbToolInstalled || '') : ''));
             const [duplicateExtCount, setDuplicateExtCount] = useState(0);
             const seenExtIdsRef = useRef(new Set());
@@ -2033,7 +2041,7 @@ Input:
                         showToast('Đã lấy Fanpage mẫu (Chế độ xem trước)!', 'success');
                         return;
                     }
-                    return showToast('Vui lòng cài đặt Extension v3.6 trước!', 'error');
+                    return showToast('Vui lòng cài đặt Extension v3.8 trước!', 'error');
                 }
                 setIsFetchingPages(true);
                 addLog('info', 'Đang tìm tab Fanpage Facebook đang mở...');
@@ -2294,7 +2302,7 @@ Input:
                         addLog('success', '✅ Đã quét 2 bài viết mẫu từ trang');
                         return;
                     }
-                    return showToast('Vui lòng cài đặt Extension v3.6 trước!', 'error');
+                    return showToast('Vui lòng cài đặt Extension v3.8 trước!', 'error');
                 }
 
                 setPagePosts([]);
@@ -2305,7 +2313,7 @@ Input:
             };
 
             const handleSharePosts = async () => {
-                if (!extensionStatus && !previewMode) return showToast('Vui lòng cài đặt Extension v3.6 trước!', 'error');
+                if (!extensionStatus && !previewMode) return showToast('Vui lòng cài đặt Extension v3.8 trước!', 'error');
                 const liveExtVer = installedExtVersion || (typeof document !== 'undefined' ? (document.documentElement?.dataset?.fbToolInstalled || '') : '');
                 if (extensionStatus && liveExtVer && liveExtVer !== REQUIRED_EXT_VERSION) {
                     const msg = `Chrome đang chạy Extension bản cũ (v${liveExtVer})! Vui lòng vào chrome://extensions gỡ bản cũ và cài bản v${REQUIRED_EXT_VERSION} để chia sẻ đúng nhóm đã chọn.`;
@@ -3357,17 +3365,17 @@ Input:
                                                         type="button"
                                                         onClick={async () => {
                                                             try {
-                                                                const { filename, kb } = await downloadExtensionZip('3.6');
-                                                                showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.6.`, 'success');
+                                                                const { filename, kb } = await downloadExtensionZip('3.8');
+                                                                showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.8.`, 'success');
                                                             } catch (e) {
-                                                                showToast(e?.message || 'Lỗi tải Extension v3.6', 'error');
+                                                                showToast(e?.message || 'Lỗi tải Extension v3.8', 'error');
                                                             }
                                                         }}
-                                                        title="Tải bản cập nhật Extension v3.6 (kiểm tra chính xác bài đang hiển thị kể cả giao diện cửa sổ bật lên / chờ duyệt / bị gỡ)"
+                                                        title="Tải bản cập nhật Extension v3.8 (đăng bài ngầm chắc chắn đủ chữ + ảnh, chống đăng bài trống chữ)"
                                                         className={`w-full flex items-center rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors font-semibold ${sidebarCollapsed ? 'justify-center p-1.5' : 'justify-center gap-1.5 px-2 py-1.5 text-[11px]'}`}
                                                     >
                                                         <span className="material-symbols-outlined text-[15px]">download</span>
-                                                        {!sidebarCollapsed && <span>Tải Extension v3.6</span>}
+                                                        {!sidebarCollapsed && <span>Tải Extension v3.8</span>}
                                                     </button>
                                                     {!sidebarCollapsed && extensionStatus && installedExtVersion && (
                                                         <div className={`mt-1.5 px-2 py-1 rounded-md text-[10px] font-semibold flex items-center justify-between ${installedExtVersion === REQUIRED_EXT_VERSION && duplicateExtCount <= 1 ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400'}`}>
@@ -3833,16 +3841,16 @@ Input:
                                                     onClick={async () => {
                                                         setShowUserDropdown(false);
                                                         try {
-                                                            const { filename, kb } = await downloadExtensionZip('3.6');
-                                                            showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.6.`, 'success');
+                                                            const { filename, kb } = await downloadExtensionZip('3.8');
+                                                            showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.8.`, 'success');
                                                         } catch (e) {
-                                                            showToast(e?.message || 'Lỗi tải Extension v3.6', 'error');
+                                                            showToast(e?.message || 'Lỗi tải Extension v3.8', 'error');
                                                         }
                                                     }}
                                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-primary hover:bg-primary/5 text-left font-bold transition-all"
                                                 >
                                                     <span className="material-symbols-outlined text-base text-primary">extension</span>
-                                                    Tải Extension v3.6 (.zip)
+                                                    Tải Extension v3.8 (.zip)
                                                 </button>
 
                                                 <button 
@@ -5254,8 +5262,8 @@ Input:
                 setDownloadSuccess('');
 
                 try {
-                    const { filename, kb } = await downloadExtensionZip('3.6');
-                    const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v3.6 rồi cài vào chrome://extensions.`;
+                    const { filename, kb } = await downloadExtensionZip('3.8');
+                    const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v3.8 rồi cài vào chrome://extensions.`;
                     setDownloadSuccess(successMsg);
                     if (showToast) {
                         showToast(successMsg, 'success');
@@ -5351,7 +5359,7 @@ Input:
                                                     </span>
                                                     <span>{isDownloading ? 'Đang kiểm tra & tải...' : t('ext_download_btn')}</span>
                                                     {!isDownloading && (
-                                                        <span className="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded shrink-0">v3.6</span>
+                                                        <span className="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded shrink-0">v3.8</span>
                                                     )}
                                                 </button>
                                                 <button
