@@ -440,25 +440,41 @@ export function createGeminiClient(): GoogleGenAI | null {
 }
 
 function formatGeminiError(err: unknown): { status: number; message: string } {
-  const raw = err instanceof Error ? err.message : String(err || 'Lỗi kết nối Gemini AI');
+  let raw = err instanceof Error ? err.message : String(err || 'Lỗi kết nối Gemini AI');
+  if (raw.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.error?.message === 'string' && parsed.error.message.trim()) {
+        raw = parsed.error.message.trim();
+      }
+    } catch {
+      // Keep original message if not valid JSON
+    }
+  }
   if (/API_KEY_INVALID|PERMISSION_DENIED|403|401|unauthenticated/i.test(raw)) {
     return {
       status: 403,
       message:
-        'GEMINI_API_KEY không hợp lệ hoặc không có quyền gọi model. Vui lòng kiểm tra lại biến môi trường GEMINI_API_KEY trên Vercel rồi Redeploy.',
+        'GEMINI_API_KEY không hợp lệ hoặc không có quyền gọi model. Vui lòng kiểm tra lại biến môi trường GEMINI_API_KEY trên máy chủ.',
     };
   }
   if (/RESOURCE_EXHAUSTED|429|quota/i.test(raw)) {
     return {
       status: 429,
       message:
-        'GEMINI_API_KEY đang chạm giới hạn tốc độ / hạn mức (429). Vui lòng chờ vài giây rồi thử lại hoặc dùng API key có billing.',
+        'GEMINI_API_KEY đang chạm giới hạn tốc độ / hạn mức (429). Vui lòng chờ vài giây rồi thử lại.',
     };
   }
-  if (/timed out/i.test(raw)) {
+  if (/UNAVAILABLE|high demand|overloaded|503/i.test(raw)) {
+    return {
+      status: 503,
+      message: 'Hệ thống Gemini AI đang quá tải tạm thời (503). Vui lòng thử lại sau vài giây.',
+    };
+  }
+  if (/timed out|aborted/i.test(raw)) {
     return {
       status: 504,
-      message: 'Gemini AI phản hồi quá thời gian chờ. Vui lòng thử lại hoặc chuyển sang model Gemini 3.1 Flash Lite.',
+      message: 'Gemini AI phản hồi quá thời gian chờ. Vui lòng thử lại sau vài giây.',
     };
   }
   return { status: 502, message: raw };
@@ -467,14 +483,25 @@ function formatGeminiError(err: unknown): { status: number; message: string } {
 async function generateWithTimeout(
   ai: GoogleGenAI,
   params: Parameters<GoogleGenAI['models']['generateContent']>[0],
-  timeoutMs = 12000,
+  timeoutMs = 20000,
 ) {
+  const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
+    const mergedParams = {
+      ...params,
+      config: {
+        ...(params.config ?? {}),
+        abortSignal: controller.signal,
+      },
+    };
     return await Promise.race([
-      ai.models.generateContent(params),
+      ai.models.generateContent(mergedParams),
       new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error('Gemini API request timed out')), timeoutMs);
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new Error('Gemini API request timed out'));
+        }, timeoutMs);
       }),
     ]);
   } finally {
@@ -510,67 +537,74 @@ export async function generateWithFallback(
   requestedModel: string | undefined,
   contents: string,
   systemInstruction?: string,
-  seed?: number,
+  _seed?: number,
 ) {
   const primary = resolveGeminiModel(requestedModel);
   const secondary: SupportedGeminiModel =
     primary === 'gemini-3.1-flash-lite' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
 
-  const attempts: Array<{ model: SupportedGeminiModel; useSeed: boolean; timeoutMs: number }> = [
-    {
-      model: primary,
-      useSeed: primary !== 'gemini-4-hydrogen' && typeof seed === 'number' && Number.isFinite(seed),
-      timeoutMs: primary === 'gemini-4-hydrogen' ? 6000 : 10000,
-    },
-    ...(primary !== 'gemini-4-hydrogen' && typeof seed === 'number' && Number.isFinite(seed)
-      ? [{ model: primary, useSeed: false, timeoutMs: 8000 }]
-      : []),
-    {
-      model: secondary,
-      useSeed: false,
-      timeoutMs: secondary === 'gemini-4-hydrogen' ? 8000 : 10000,
-    },
-  ];
+  const runAttempt = async (model: SupportedGeminiModel, timeoutMs: number) => {
+    const config: Record<string, unknown> = {
+      thinkingConfig: {
+        thinkingLevel: model === 'gemini-4-hydrogen' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL,
+      },
+    };
+    if (systemInstruction) {
+      config.systemInstruction = systemInstruction;
+    }
+
+    const response = await generateWithTimeout(
+      ai,
+      {
+        model,
+        contents,
+        config,
+      },
+      timeoutMs,
+    );
+
+    const text = extractResponseText(response);
+    if (!text) {
+      throw new Error(`Model ${model} returned empty text`);
+    }
+
+    return { response, text, usedModel: model };
+  };
 
   let lastErr: unknown = null;
-  for (const attempt of attempts) {
-    try {
-      const config: Record<string, unknown> = {};
-      if (systemInstruction) config.systemInstruction = systemInstruction;
-      if (attempt.model === 'gemini-4-hydrogen') {
-        config.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
-      } else if (attempt.useSeed && typeof seed === 'number' && Number.isFinite(seed)) {
-        config.seed = Math.abs(Math.floor(seed));
-      }
+  const startedAt = Date.now();
 
-      const response = await generateWithTimeout(
-        ai,
-        {
-          model: attempt.model,
-          contents,
-          ...(Object.keys(config).length > 0 ? { config } : {}),
-        },
-        attempt.timeoutMs,
-      );
+  try {
+    return await runAttempt(primary, 20000);
+  } catch (err) {
+    lastErr = err;
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/API_KEY_INVALID|PERMISSION_DENIED|401|403/i.test(msg)) {
+      throw err;
+    }
+  }
 
-      const text = extractResponseText(response);
-      if (!text) {
-        throw new Error(`Model ${attempt.model} returned empty text`);
-      }
+  // Fallback to secondary model
+  try {
+    return await runAttempt(secondary, 20000);
+  } catch (fallbackErr) {
+    lastErr = fallbackErr;
+    const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+    if (/API_KEY_INVALID|PERMISSION_DENIED|401|403/i.test(msg)) {
+      throw fallbackErr;
+    }
 
-      return { response, text, usedModel: attempt.model };
-    } catch (err) {
-      lastErr = err;
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn(
-        `[Gemini] Attempt (${attempt.model}, seed=${attempt.useSeed}) failed/empty, trying next:`,
-        msg,
-      );
-      if (/API_KEY_INVALID/i.test(msg)) {
-        break;
+    // If both models failed quickly due to transient 503/high-demand, do one brief retry on primary
+    if (/UNAVAILABLE|high demand|overloaded|503/i.test(msg) && Date.now() - startedAt < 25000) {
+      await new Promise((r) => setTimeout(r, 1200));
+      try {
+        return await runAttempt(primary, 15000);
+      } catch (retryErr) {
+        lastErr = retryErr;
       }
     }
   }
+
   throw lastErr instanceof Error ? lastErr : new Error('Không thể kết nối Gemini AI');
 }
 

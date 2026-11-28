@@ -75,7 +75,7 @@
         }
 
         // Resilient 3-channel Extension ZIP downloader (works on Vercel Edge CDN, Vercel API, and local/iframe preview)
-        async function downloadExtensionZip(version = '3.8') {
+        async function downloadExtensionZip(version = '4.1') {
             const filename = `fb-tool-ext-v${version}.zip`;
             const cacheBust = `v=${encodeURIComponent(version)}&t=${Date.now()}`;
             let zipBytes = null;
@@ -533,17 +533,17 @@
         function SettingsDelay({ delayMin, setDelayMin, delayMax, setDelayMax, postingCountdown, postMode, setPostMode, t }) {
             const hasCountdown = postingCountdown && postingCountdown.current > 0;
             return (
-                <div className={`relative bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 p-6 flex flex-col justify-between hover:shadow-soft transition-all duration-500 overflow-hidden ${hasCountdown ? 'ring-2 ring-primary bg-gradient-to-br from-indigo-50/50 to-purple-50/30 dark:from-indigo-950/20 dark:to-purple-950/20' : ''}`}>
+                <div className={`relative bg-card-light dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-border-light/50 p-4 sm:p-6 flex flex-col justify-between hover:shadow-soft transition-all duration-500 overflow-hidden ${hasCountdown ? 'ring-2 ring-primary bg-gradient-to-br from-indigo-50/50 to-purple-50/30 dark:from-indigo-950/20 dark:to-purple-950/20' : ''}`}>
                     {hasCountdown && (
                         <div className="absolute inset-0 bg-primary/[0.02] dark:bg-primary/[0.05] animate-pulse pointer-events-none" />
                     )}
                     <div>
-                        <div className="flex items-center justify-between mb-5">
-                             <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between mb-4 sm:mb-5">
+                             <div className="flex items-center gap-2.5 sm:gap-3">
                                 <div className={`p-1.5 rounded-md transition-colors duration-300 ${hasCountdown ? 'bg-rose-500 text-white animate-bounce' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'}`}>
                                     <span className="material-symbols-outlined text-[20px]">{hasCountdown ? 'alarm_on' : 'timer'}</span>
                                 </div>
-                                <h3 className="font-semibold text-base text-text-main dark:text-white">{t('settings_delay')}</h3>
+                                <h3 className="font-semibold text-sm sm:text-base text-text-main dark:text-white">{t('settings_delay')}</h3>
                             </div>
                             {hasCountdown && (
                                 <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500 text-white animate-pulse">
@@ -652,14 +652,14 @@
                                     >
                                         <option value="desktop">🕶️ Tab ngầm (Không chiếm màn hình - Mặc định)</option>
                                         <option value="desktop_visible">🖥️ Hiển thị tab (Gỡ lỗi trực tiếp)</option>
-                                        <option value="mobile">📱 Mobile Mode (Mbasic - Chạy ẩn)</option>
+                                        <option value="mobile">📱 Mobile Mode (m.facebook.com — Điện thoại)</option>
                                     </select>
                                     <p className="mt-1.5 text-[11px] text-text-secondary leading-snug">
                                         {(postMode || 'desktop') === 'desktop'
                                             ? 'Tự mở tab ngầm riêng để đăng từng nhóm rồi tự đóng, không nhảy tab hay ảnh hưởng các công việc khác.'
                                             : postMode === 'desktop_visible'
                                                 ? 'Hiển thị trực tiếp tab Facebook khi đăng để bạn theo dõi thao tác.'
-                                                : 'Gửi yêu cầu trực tiếp qua giao diện Mbasic không cần mở tab.'}
+                                                : 'Tự động đăng bài bằng giao diện m.facebook.com (hỗ trợ cả chữ + ảnh trên Lemur/Kiwi) rồi tự quay lại.'}
                                     </p>
                                 </div>
                             </>
@@ -678,20 +678,14 @@
             const [showPromptEditor, setShowPromptEditor] = useState(false);
 
             return (
-                <div className="bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 p-6 relative overflow-hidden group hover:shadow-soft transition-shadow duration-300">
-                    <div className="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
-                        <span className="flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-purple-500"></span>
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-3 mb-5">
+                <div className="bg-card-light dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-border-light/50 p-4 sm:p-6 relative overflow-hidden group hover:shadow-soft transition-shadow duration-300">
+                    <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-5">
                         <div className="p-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-md text-purple-600 dark:text-purple-400">
                             <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
                         </div>
-                        <div>
-                            <h3 className="font-semibold text-base text-text-main dark:text-white">{t('settings_gemini')}</h3>
-                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">AI xử lý trực tiếp trên máy chủ · Chống spam đa góc viết</p>
+                        <div className="min-w-0">
+                            <h3 className="font-semibold text-sm sm:text-base text-text-main dark:text-white truncate">{t('settings_gemini')}</h3>
+                            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate">AI máy chủ · Chống spam đa góc viết</p>
                         </div>
                     </div>
 
@@ -897,13 +891,15 @@ Input:
 
             // Page Posts Feature State
             const [activeTab, setActiveTab] = useState('groups'); // 'groups' | 'page_posts'
+            const [mobilePostTab, setMobilePostTab] = useState('compose'); // 'compose' | 'groups' | 'progress'
+            const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
             const [pageUrl, setPageUrl] = useState('');
             const [pagePosts, setPagePosts] = useState([]);
             const [selectedPosts, setSelectedPosts] = useState(new Set());
             const [shareCaption, setShareCaption] = useState('');
             const [isScanning, setIsScanning] = useState(false);
             const [isScanningGroups, setIsScanningGroups] = useState(false); // Track group scan
-            const REQUIRED_EXT_VERSION = '3.8';
+            const REQUIRED_EXT_VERSION = '4.1';
             const [installedExtVersion, setInstalledExtVersion] = useState(() => (typeof document !== 'undefined' ? (document.documentElement?.dataset?.fbToolInstalled || '') : ''));
             const [duplicateExtCount, setDuplicateExtCount] = useState(0);
             const seenExtIdsRef = useRef(new Set());
@@ -2096,7 +2092,7 @@ Input:
                         showToast('Đã lấy Fanpage mẫu (Chế độ xem trước)!', 'success');
                         return;
                     }
-                    return showToast('Vui lòng cài đặt Extension v3.8 trước!', 'error');
+                    return showToast('Vui lòng cài đặt Extension v4.1 trước!', 'error');
                 }
                 setIsFetchingPages(true);
                 addLog('info', 'Đang tìm tab Fanpage Facebook đang mở...');
@@ -2357,7 +2353,7 @@ Input:
                         addLog('success', '✅ Đã quét 2 bài viết mẫu từ trang');
                         return;
                     }
-                    return showToast('Vui lòng cài đặt Extension v3.8 trước!', 'error');
+                    return showToast('Vui lòng cài đặt Extension v4.1 trước!', 'error');
                 }
 
                 setPagePosts([]);
@@ -2368,7 +2364,7 @@ Input:
             };
 
             const handleSharePosts = async () => {
-                if (!extensionStatus && !previewMode) return showToast('Vui lòng cài đặt Extension v3.8 trước!', 'error');
+                if (!extensionStatus && !previewMode) return showToast('Vui lòng cài đặt Extension v4.1 trước!', 'error');
                 const liveExtVer = installedExtVersion || (typeof document !== 'undefined' ? (document.documentElement?.dataset?.fbToolInstalled || '') : '');
                 if (extensionStatus && liveExtVer && liveExtVer !== REQUIRED_EXT_VERSION) {
                     const msg = `Chrome đang chạy Extension bản cũ (v${liveExtVer})! Vui lòng vào chrome://extensions gỡ bản cũ và cài bản v${REQUIRED_EXT_VERSION} để chia sẻ đúng nhóm đã chọn.`;
@@ -3084,6 +3080,10 @@ Input:
                 stopPostingRef.current = false;
                 setProgress(0);
                 setIsPosting(true);
+                if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                    setMobilePostTab('progress');
+                    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {}
+                }
 
                 const isSimulated = !extensionStatus;
                 showToast(
@@ -3426,17 +3426,17 @@ Input:
                                                         type="button"
                                                         onClick={async () => {
                                                             try {
-                                                                const { filename, kb } = await downloadExtensionZip('3.8');
-                                                                showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.8.`, 'success');
+                                                                const { filename, kb } = await downloadExtensionZip('4.1');
+                                                                showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v4.1.`, 'success');
                                                             } catch (e) {
-                                                                showToast(e?.message || 'Lỗi tải Extension v3.8', 'error');
+                                                                showToast(e?.message || 'Lỗi tải Extension v4.1', 'error');
                                                             }
                                                         }}
-                                                        title="Tải bản cập nhật Extension v3.8 (đăng bài ngầm chắc chắn đủ chữ + ảnh, chống đăng bài trống chữ)"
+                                                        title="Tải bản cập nhật Extension v4.1 (hỗ trợ chế độ Desktop tự động trên Mobile Lemur/Kiwi + nhóm Mua Bán + đăng bài ngầm PC)"
                                                         className={`w-full flex items-center rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors font-semibold ${sidebarCollapsed ? 'justify-center p-1.5' : 'justify-center gap-1.5 px-2 py-1.5 text-[11px]'}`}
                                                     >
                                                         <span className="material-symbols-outlined text-[15px]">download</span>
-                                                        {!sidebarCollapsed && <span>Tải Extension v3.8</span>}
+                                                        {!sidebarCollapsed && <span>Tải Extension v4.1</span>}
                                                     </button>
                                                     {!sidebarCollapsed && extensionStatus && installedExtVersion && (
                                                         <div className={`mt-1.5 px-2 py-1 rounded-md text-[10px] font-semibold flex items-center justify-between ${installedExtVersion === REQUIRED_EXT_VERSION && duplicateExtCount <= 1 ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400'}`}>
@@ -3479,7 +3479,7 @@ Input:
                                             </aside>
 
                                             {/* Main Content Area */}
-                                            <main className={`flex-1 pt-5 pb-24 lg:py-8 px-3.5 ${sidebarCollapsed ? 'lg:ml-14' : 'lg:ml-52'} sm:px-6 lg:px-8 w-full min-w-0`}>
+                                            <main className={`flex-1 pt-3.5 pb-24 lg:py-8 px-3 ${sidebarCollapsed ? 'lg:ml-14' : 'lg:ml-52'} sm:px-6 lg:px-8 w-full min-w-0`}>
 
                                                 {/* POST PAGE */}
                                                 {activePage === 'post' && (
@@ -3500,73 +3500,184 @@ Input:
                                                         />
                                                     ) : (
                                                         <>
-                                                            <div className="mb-8">
-                                                                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-main dark:text-white mb-1.5">{t('nav_post')}</h1>
-                                                                <p className="text-text-secondary text-sm">{t('campaign_desc')}</p>
+                                                            <div className="mb-3.5 sm:mb-6 lg:mb-8">
+                                                                <h1 className="hidden lg:block text-3xl font-bold tracking-tight text-text-main dark:text-white mb-1.5">{t('nav_post')}</h1>
+                                                                <p className="hidden lg:block text-text-secondary text-sm">{t('campaign_desc')}</p>
+
+                                                                {/* Mobile Workspace Segmented Switcher */}
+                                                                <div className="lg:hidden grid grid-cols-3 gap-1 p-1 bg-slate-200/70 dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setMobilePostTab('compose')}
+                                                                        className={`flex items-center justify-center gap-1.5 min-h-[42px] px-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${mobilePostTab === 'compose' ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400'}`}
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[17px]">edit_note</span>
+                                                                        <span>Soạn bài</span>
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setMobilePostTab('groups')}
+                                                                        className={`flex items-center justify-center gap-1.5 min-h-[42px] px-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${mobilePostTab === 'groups' ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400'}`}
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[17px]">groups</span>
+                                                                        <span className="tabular-nums">Nhóm ({selectedGroups.size})</span>
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setMobilePostTab('progress')}
+                                                                        className={`flex items-center justify-center gap-1.5 min-h-[42px] px-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${mobilePostTab === 'progress' ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400'}`}
+                                                                    >
+                                                                        <span className={`material-symbols-outlined text-[17px] ${isPosting ? 'text-emerald-500 animate-spin' : ''}`}>{isPosting ? 'progress_activity' : 'terminal'}</span>
+                                                                        <span className="tabular-nums">{isPosting ? `${progress}%` : 'Tiến độ'}</span>
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-                                                                <div className="lg:col-span-8 flex flex-col gap-6">
-                                                                    <ContentEditor
-                                                                        content={content}
-                                                                        onContentChange={setContent}
-                                                                        onFormatContent={() => {
-                                                                            if (!content || !content.trim()) return;
-                                                                            const formatted = formatSalesContent(content);
-                                                                            setContent(formatted);
-                                                                            showToast('Đã tối ưu bố cục & tự động xuống dòng chuẩn Facebook!', 'success');
-                                                                        }}
-                                                                        images={images}
-                                                                        onImagesChange={setImages}
-                                                                        onTestAI={handleTestGemini}
-                                                                        spinEnabled={spinEnabled}
-                                                                        setSpinEnabled={setSpinEnabled}
-                                                                        isRewriting={isRewriting}
-                                                                        t={t}
-                                                                        fbUser={fbUser}
-                                                                        groups={groups}
-                                                                        selectedGroups={selectedGroups}
-                                                                        groupVariations={groupVariations}
-                                                                        onRegenerateVariations={regenerateVariations}
-                                                                        onRegenerateSingleGroup={regenerateSingleGroupVariation}
-                                                                        isGeneratingVariations={isGeneratingVariations}
-                                                                        writingStyle={writingStyle}
-                                                                        setWritingStyle={setWritingStyle}
-                                                                        selectedPage={selectedPage}
-                                                                        setSelectedPage={setSelectedPage}
-                                                                        fbPages={fbPages}
-                                                                    />
-                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                                        <SettingsDelay delayMin={safeDelayMin} setDelayMin={setSafeDelayMin} delayMax={safeDelayMax} setDelayMax={setSafeDelayMax} postingCountdown={postingCountdown} postMode={postMode} setPostMode={setPostMode} t={t} />
-                                                                        <SettingsAI 
-                                                                            model={model} 
-                                                                            setModel={setModel} 
-                                                                            writingStyle={writingStyle} 
-                                                                            setWritingStyle={setWritingStyle} 
-                                                                            customPrompt={customPrompt} 
-                                                                            setCustomPrompt={setCustomPrompt} 
-                                                                            defaultPrompt={defaultPrompt} 
-                                                                            t={t} 
-                                                                            addLog={addLog} 
-                                                                            showToast={showToast} 
+                                                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-start">
+                                                                <div className={`${mobilePostTab === 'groups' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 flex-col gap-4 sm:gap-6`}>
+                                                                    <div className={mobilePostTab === 'compose' ? 'flex flex-col gap-4 sm:gap-6' : 'hidden lg:flex lg:flex-col lg:gap-6'}>
+                                                                        <ContentEditor
+                                                                            content={content}
+                                                                            onContentChange={setContent}
+                                                                            onFormatContent={() => {
+                                                                                if (!content || !content.trim()) return;
+                                                                                const formatted = formatSalesContent(content);
+                                                                                setContent(formatted);
+                                                                                showToast('Đã tối ưu bố cục & tự động xuống dòng chuẩn Facebook!', 'success');
+                                                                            }}
+                                                                            images={images}
+                                                                            onImagesChange={setImages}
+                                                                            onTestAI={handleTestGemini}
+                                                                            spinEnabled={spinEnabled}
+                                                                            setSpinEnabled={setSpinEnabled}
+                                                                            isRewriting={isRewriting}
+                                                                            t={t}
+                                                                            fbUser={fbUser}
+                                                                            groups={groups}
+                                                                            selectedGroups={selectedGroups}
+                                                                            groupVariations={groupVariations}
+                                                                            onRegenerateVariations={regenerateVariations}
+                                                                            onRegenerateSingleGroup={regenerateSingleGroupVariation}
+                                                                            isGeneratingVariations={isGeneratingVariations}
+                                                                            writingStyle={writingStyle}
+                                                                            setWritingStyle={setWritingStyle}
+                                                                            selectedPage={selectedPage}
+                                                                            setSelectedPage={setSelectedPage}
+                                                                            fbPages={fbPages}
+                                                                        />
+
+                                                                        {/* Mobile Collapsible Settings Header */}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setMobileSettingsOpen(!mobileSettingsOpen)}
+                                                                            className="lg:hidden w-full flex items-center justify-between gap-3 px-4 py-3.5 min-h-[48px] bg-card-light dark:bg-slate-800 rounded-2xl shadow-card ring-1 ring-border-light/50 text-left transition-colors active:scale-[0.99]"
+                                                                        >
+                                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                                <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
+                                                                                    <span className="material-symbols-outlined text-[18px]">tune</span>
+                                                                                </div>
+                                                                                <div className="min-w-0">
+                                                                                    <p className="text-xs font-bold text-text-main dark:text-white leading-tight">Cài đặt Delay &amp; Gemini AI</p>
+                                                                                    <p className="text-[11px] text-text-secondary truncate mt-0.5 tabular-nums">
+                                                                                        {safeDelayMin}–{safeDelayMax}s · {model === 'gemini-4-hydrogen' ? 'Gemini 4 Hydrogen' : 'Flash Lite'}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <span className="material-symbols-outlined text-[20px] text-text-secondary transition-transform duration-200 flex-shrink-0" style={{ transform: mobileSettingsOpen ? 'rotate(180deg)' : 'none' }}>
+                                                                                expand_more
+                                                                            </span>
+                                                                        </button>
+
+                                                                        <div className={`${mobileSettingsOpen ? 'grid' : 'hidden lg:grid'} grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6`}>
+                                                                            <SettingsDelay delayMin={safeDelayMin} setDelayMin={setSafeDelayMin} delayMax={safeDelayMax} setDelayMax={setSafeDelayMax} postingCountdown={postingCountdown} postMode={postMode} setPostMode={setPostMode} t={t} />
+                                                                            <SettingsAI 
+                                                                                model={model} 
+                                                                                setModel={setModel} 
+                                                                                writingStyle={writingStyle} 
+                                                                                setWritingStyle={setWritingStyle} 
+                                                                                customPrompt={customPrompt} 
+                                                                                setCustomPrompt={setCustomPrompt} 
+                                                                                defaultPrompt={defaultPrompt} 
+                                                                                t={t} 
+                                                                                addLog={addLog} 
+                                                                                showToast={showToast} 
+                                                                            />
+                                                                        </div>
+
+                                                                        {/* Mobile Quick Action Footer on Compose Tab */}
+                                                                        <div className="lg:hidden flex items-center gap-2.5">
+                                                                            {isPosting ? (
+                                                                                <>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => setMobilePostTab('progress')}
+                                                                                        className="flex-1 min-h-[48px] px-4 rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
+                                                                                    >
+                                                                                        <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                                                                                        <span className="tabular-nums">Xem tiến độ ({progress}%)</span>
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={handleStopPost}
+                                                                                        className="min-h-[48px] px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm flex items-center justify-center gap-1.5 shadow-lg active:scale-[0.98] transition-all"
+                                                                                    >
+                                                                                        <span className="material-symbols-outlined text-[18px]">stop_circle</span>
+                                                                                        <span>Dừng</span>
+                                                                                    </button>
+                                                                                </>
+                                                                            ) : selectedGroups.size === 0 ? (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setMobilePostTab('groups')}
+                                                                                    className="w-full min-h-[48px] px-4 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
+                                                                                >
+                                                                                    <span className="material-symbols-outlined text-[19px]">groups</span>
+                                                                                    <span>Chọn nhóm để đăng ({groups.length})</span>
+                                                                                </button>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => setMobilePostTab('groups')}
+                                                                                        className="min-h-[48px] px-3.5 rounded-xl bg-white dark:bg-slate-800 border border-border-light dark:border-slate-700 text-text-main dark:text-gray-200 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all whitespace-nowrap"
+                                                                                    >
+                                                                                        <span className="material-symbols-outlined text-[18px] text-primary">groups</span>
+                                                                                        <span className="tabular-nums">{selectedGroups.size} nhóm</span>
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={handleStartPost}
+                                                                                        className="flex-1 min-h-[48px] px-4 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
+                                                                                    >
+                                                                                        <span>{t('start_post')}</span>
+                                                                                        <span className="material-symbols-outlined text-[18px]">send</span>
+                                                                                    </button>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className={mobilePostTab === 'progress' ? 'block' : 'hidden lg:block'}>
+                                                                        <ProgressLog
+                                                                            logs={logs}
+                                                                            progress={progress}
+                                                                            t={t}
+                                                                            isPosting={isPosting}
+                                                                            postingCountdown={postingCountdown}
+                                                                            onStopPost={handleStopPost}
+                                                                            successItems={successItems}
+                                                                            isCheckingStatus={isCheckingStatus}
+                                                                            checkProgress={checkProgress}
+                                                                            onCheckAllStatus={() => handleCheckPostStatuses(null)}
+                                                                            onCheckSingleStatus={(id) => handleCheckPostStatuses([id])}
+                                                                            onStopCheckStatus={handleStopCheckStatus}
+                                                                            onClearSuccessItems={handleClearSuccessItems}
+                                                                            collections={collections}
+                                                                            onSaveLiveGroupsCollection={handleSaveLiveGroupsCollection}
+                                                                            noTopMargin={true}
                                                                         />
                                                                     </div>
-                                                                    <ProgressLog
-                                                                        logs={logs}
-                                                                        progress={progress}
-                                                                        t={t}
-                                                                        successItems={successItems}
-                                                                        isCheckingStatus={isCheckingStatus}
-                                                                        checkProgress={checkProgress}
-                                                                        onCheckAllStatus={() => handleCheckPostStatuses(null)}
-                                                                        onCheckSingleStatus={(id) => handleCheckPostStatuses([id])}
-                                                                        onStopCheckStatus={handleStopCheckStatus}
-                                                                        onClearSuccessItems={handleClearSuccessItems}
-                                                                        collections={collections}
-                                                                        onSaveLiveGroupsCollection={handleSaveLiveGroupsCollection}
-                                                                        noTopMargin={true}
-                                                                    />
                                                                 </div>
-                                                                <div className="lg:col-span-4 w-full min-w-0 lg:sticky lg:top-20 lg:self-start">
+                                                                <div className={`${mobilePostTab === 'groups' ? 'block' : 'hidden lg:block'} lg:col-span-4 w-full min-w-0 lg:sticky lg:top-20 lg:self-start`}>
                                                                     <GroupsPanel
                                                                         fbUser={fbUser}
                                                                         selectedPage={selectedPage}
@@ -3720,24 +3831,24 @@ Input:
                                         </div>
 
                                         {/* Fixed Mobile Bottom Navigation Bar */}
-                                        <nav aria-label="Điều hướng di động" className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-safe">
-                                            <div className={`grid ${userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-3'} max-w-lg mx-auto px-1.5 pt-1.5`}>
-                                                <a href="/" className={`flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-xl text-[11px] font-semibold transition-all ${activePage === 'post' ? 'text-primary bg-primary/10 dark:bg-primary/20' : 'text-gray-500 dark:text-gray-400'}`}>
-                                                    <span className="material-symbols-outlined text-[22px]">edit_note</span>
-                                                    <span className="truncate max-w-full px-1">{t('nav_post')}</span>
+                                        <nav aria-label="Điều hướng di động" className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200/90 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-safe">
+                                            <div className={`grid ${userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-3'} max-w-lg mx-auto px-1.5 pt-1`}>
+                                                <a href="/" className={`flex flex-col items-center justify-center gap-0.5 min-h-[50px] rounded-xl text-[11px] font-semibold transition-all ${activePage === 'post' ? 'text-primary bg-primary/10 dark:bg-primary/20' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                    <span className="material-symbols-outlined text-[21px]" style={activePage === 'post' ? { fontVariationSettings: '"FILL" 1' } : undefined}>edit_note</span>
+                                                    <span className="truncate max-w-full px-1 leading-tight">{t('nav_post')}</span>
                                                 </a>
-                                                <a href="/share" className={`flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-xl text-[11px] font-semibold transition-all ${activePage === 'share' ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10' : 'text-gray-500 dark:text-gray-400'}`}>
-                                                    <span className="material-symbols-outlined text-[22px]">share</span>
-                                                    <span className="truncate max-w-full px-1">{t('nav_share')}</span>
+                                                <a href="/share" className={`flex flex-col items-center justify-center gap-0.5 min-h-[50px] rounded-xl text-[11px] font-semibold transition-all ${activePage === 'share' ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                    <span className="material-symbols-outlined text-[21px]" style={activePage === 'share' ? { fontVariationSettings: '"FILL" 1' } : undefined}>share</span>
+                                                    <span className="truncate max-w-full px-1 leading-tight">{t('nav_share')}</span>
                                                 </a>
-                                                <a href="/pricing" className={`flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-xl text-[11px] font-semibold transition-all ${activePage === 'subscription' ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10' : 'text-gray-500 dark:text-gray-400'}`}>
-                                                    <span className="material-symbols-outlined text-[22px]">workspace_premium</span>
-                                                    <span className="truncate max-w-full px-1">{t('nav_subscription')}</span>
+                                                <a href="/pricing" className={`flex flex-col items-center justify-center gap-0.5 min-h-[50px] rounded-xl text-[11px] font-semibold transition-all ${activePage === 'subscription' ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                    <span className="material-symbols-outlined text-[21px]" style={activePage === 'subscription' ? { fontVariationSettings: '"FILL" 1' } : undefined}>workspace_premium</span>
+                                                    <span className="truncate max-w-full px-1 leading-tight">{t('nav_subscription')}</span>
                                                 </a>
                                                 {userRole === 'admin' && (
-                                                    <a href="/admin" className="flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-xl text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:text-primary transition-all">
-                                                        <span className="material-symbols-outlined text-[22px]">shield</span>
-                                                        <span className="truncate max-w-full px-1">Admin</span>
+                                                    <a href="/admin" className="flex flex-col items-center justify-center gap-0.5 min-h-[50px] rounded-xl text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:text-primary transition-all">
+                                                        <span className="material-symbols-outlined text-[21px]">shield</span>
+                                                        <span className="truncate max-w-full px-1 leading-tight">Admin</span>
                                                     </a>
                                                 )}
                                             </div>
@@ -3786,8 +3897,8 @@ Input:
 
             return (
                 <header className={`sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-border-light shadow-sm transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-52'}`}>
-                    <div className="px-3.5 sm:px-6 lg:px-8">
-                        <div className="flex justify-between h-14 sm:h-16 items-center gap-2">
+                    <div className="px-3 sm:px-6 lg:px-8">
+                        <div className="flex justify-between h-[52px] sm:h-16 items-center gap-2">
                             {/* Left Side: Mobile Brand Mark */}
                             <a href="/" className="flex lg:hidden items-center gap-2 min-w-0">
                                 <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -3797,15 +3908,15 @@ Input:
                                         <span className="material-symbols-outlined text-primary text-[19px]">rocket_launch</span>
                                     )}
                                 </div>
-                                <span className="font-bold text-text-main dark:text-white text-sm truncate">{settings.appName || 'AutoPost Pro'}</span>
+                                <span className="font-bold text-text-main dark:text-white text-sm truncate max-w-[130px] sm:max-w-[180px]">{settings.appName || 'AutoPost Pro'}</span>
                             </a>
                             <div className="hidden lg:flex items-center gap-2"></div>
 
-                            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
                                 {/* Plan Badge & Real-time Countdown */}
                                 {googleUser && (
                                     <div className="flex items-center gap-1.5 sm:gap-2">
-                                        <a href="/pricing" className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-sm transition-all duration-300 ${
+                                        <a href="/pricing" className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-sm transition-all duration-300 whitespace-nowrap ${
                                             (isAdminLifetime || subscription.plan === 'pro')
                                                 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20' 
                                                 : subscription.plan === 'enterprise' 
@@ -3814,10 +3925,13 @@ Input:
                                         }`}>
                                             <span className="material-symbols-outlined text-[13px]" style={{fontVariationSettings: '"FILL" 1'}}>workspace_premium</span>
                                             <span>{isAdminLifetime ? 'PRO' : (subscription.plan || 'free').toUpperCase()}</span>
+                                            {isAdminLifetime && (
+                                                <span className="sm:hidden inline-flex items-center text-emerald-600 dark:text-emerald-400 ml-0.5">· ∞</span>
+                                            )}
                                         </a>
 
                                         {(isAdminLifetime || subscription.plan !== 'free') && (
-                                            <div className="text-[10px] sm:text-[11px] font-semibold flex items-center gap-1 bg-slate-50 dark:bg-slate-800/40 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400">
+                                            <div className={`${isAdminLifetime ? 'hidden sm:flex' : 'flex'} text-[10px] sm:text-[11px] font-semibold items-center gap-1 bg-slate-50 dark:bg-slate-800/40 px-2 sm:px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 whitespace-nowrap`}>
                                                 <span className={`material-symbols-outlined text-[12px] ${isAdminLifetime ? 'text-emerald-600 dark:text-emerald-400' : isSubscriptionActive() ? 'text-primary' : 'text-rose-500'}`}>
                                                     {isAdminLifetime ? 'all_inclusive' : isSubscriptionActive() ? 'schedule' : 'error'}
                                                 </span>
@@ -3833,13 +3947,35 @@ Input:
                                 )}
 
                                 {/* Dark Mode Toggle */}
-                                <label className="relative inline-flex items-center cursor-pointer select-none">
-                                    <input type="checkbox" checked={theme === 'dark'} onChange={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="sr-only peer" />
-                                    <div className="w-14 h-7 bg-gray-200 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-7 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary flex items-center justify-between px-1.5">
-                                        <span className="material-symbols-outlined text-[14px] text-amber-500">light_mode</span>
-                                        <span className="material-symbols-outlined text-[14px] text-white">dark_mode</span>
-                                    </div>
-                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                                    aria-label={theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+                                    title={theme === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'}
+                                    className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-amber-500 dark:text-blue-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">
+                                        {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={theme === 'dark'}
+                                    aria-label="Chuyển đổi giao diện sáng / tối"
+                                    onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                                    className={`hidden sm:inline-flex relative w-14 h-7 rounded-full items-center justify-between px-1.5 transition-colors duration-200 flex-shrink-0 overflow-hidden ${theme === 'dark' ? 'bg-primary' : 'bg-gray-200 dark:bg-slate-700'}`}
+                                >
+                                    <span className="material-symbols-outlined text-[14px] text-amber-500 z-0 select-none">light_mode</span>
+                                    <span className="material-symbols-outlined text-[14px] text-white z-0 select-none">dark_mode</span>
+                                    <span
+                                        className="absolute top-[2px] left-[2px] w-6 h-6 rounded-full bg-white shadow-sm transition-transform duration-200 z-10"
+                                        style={{
+                                            WebkitTransform: theme === 'dark' ? 'translateX(28px)' : 'translateX(0px)',
+                                            transform: theme === 'dark' ? 'translateX(28px)' : 'translateX(0px)',
+                                        }}
+                                    />
+                                </button>
                                 
                                 {/* Language Switcher */}
                                 <div className="hidden sm:flex bg-gray-100 dark:bg-slate-800 rounded-lg p-0.5 border border-gray-200 dark:border-slate-700">
@@ -3852,7 +3988,7 @@ Input:
                                     <div className="relative" ref={dropdownRef}>
                                         <button 
                                             onClick={() => setShowUserDropdown(!showUserDropdown)} 
-                                            className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 transition-all focus:outline-none"
+                                            className="flex items-center gap-1 sm:gap-2 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-slate-200 dark:border-slate-700 transition-all focus:outline-none"
                                         >
                                             {(googleUser.picture || googleUser.photoURL) ? (
                                                 <img src={googleUser.picture || googleUser.photoURL} className="w-6 h-6 rounded-full border border-white dark:border-slate-850 object-cover" alt="Avatar" />
@@ -3907,16 +4043,16 @@ Input:
                                                     onClick={async () => {
                                                         setShowUserDropdown(false);
                                                         try {
-                                                            const { filename, kb } = await downloadExtensionZip('3.8');
-                                                            showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v3.8.`, 'success');
+                                                            const { filename, kb } = await downloadExtensionZip('4.1');
+                                                            showToast(`Đã tải ${filename} (${kb} KB)! Hãy gỡ bản cũ trong chrome://extensions rồi nạp thư mục fb-tool-ext-v4.1.`, 'success');
                                                         } catch (e) {
-                                                            showToast(e?.message || 'Lỗi tải Extension v3.8', 'error');
+                                                            showToast(e?.message || 'Lỗi tải Extension v4.1', 'error');
                                                         }
                                                     }}
                                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-primary hover:bg-primary/5 text-left font-bold transition-all"
                                                 >
                                                     <span className="material-symbols-outlined text-base text-primary">extension</span>
-                                                    Tải Extension v3.8 (.zip)
+                                                    Tải Extension v4.1 (.zip)
                                                 </button>
 
                                                 <button 
@@ -4061,29 +4197,29 @@ Input:
             };
 
             return (
-                <div onPaste={handlePaste} className="bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 overflow-hidden group hover:shadow-soft transition-shadow duration-300">
-                    <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-border-light flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-gray-50/30 dark:bg-slate-800/50">
-                        <div className="flex items-center gap-3 min-w-0">
+                <div onPaste={handlePaste} className="bg-card-light dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-border-light/50 overflow-hidden group hover:shadow-soft transition-shadow duration-300">
+                    <div className="px-3.5 sm:px-6 py-3 sm:py-4 border-b border-border-light flex items-center justify-between gap-2.5 bg-gray-50/30 dark:bg-slate-800/50">
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                             <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-md text-primary flex-shrink-0">
                                 <span className="material-symbols-outlined text-[20px]">edit_note</span>
                             </div>
                             <div className="min-w-0">
-                                <h2 className="font-semibold text-base text-text-main dark:text-white leading-tight truncate">{t('editor_title')}</h2>
-                                <p className="text-xs text-text-secondary mt-0.5 truncate">Nội dung bài viết chính</p>
+                                <h2 className="font-semibold text-sm sm:text-base text-text-main dark:text-white leading-tight truncate">{t('editor_title')}</h2>
+                                <p className="text-[11px] sm:text-xs text-text-secondary mt-0.5 truncate">Nội dung bài viết chính</p>
                             </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0">
+                        <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-shrink-0">
                             <button
                                 onClick={() => setShowPreview(!showPreview)}
-                                className={`flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 min-h-[38px] sm:min-h-0 text-xs font-semibold rounded-lg whitespace-nowrap transition-all ${showPreview ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-slate-700 text-text-secondary hover:bg-gray-200 dark:hover:bg-slate-600'}`}
+                                className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 min-h-[38px] sm:min-h-0 text-xs font-semibold rounded-lg whitespace-nowrap transition-all ${showPreview ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-slate-700 text-text-secondary hover:bg-gray-200 dark:hover:bg-slate-600'}`}
                             >
                                 <span className="material-symbols-outlined text-[16px]">{showPreview ? 'visibility_off' : 'visibility'}</span>
-                                {showPreview ? 'Ẩn xem trước' : 'Xem trước'}
+                                <span>{showPreview ? 'Ẩn' : 'Xem trước'}</span>
                             </button>
-                            <span className="text-xs font-mono font-medium text-text-secondary bg-gray-100 dark:bg-slate-700 px-2.5 py-1.5 sm:py-1 rounded-md border border-gray-200 dark:border-slate-600 whitespace-nowrap tabular-nums">{content.length} chars</span>
+                            <span className="text-[11px] sm:text-xs font-mono font-medium text-text-secondary bg-gray-100 dark:bg-slate-700 px-2 sm:px-2.5 py-1.5 sm:py-1 rounded-md border border-gray-200 dark:border-slate-600 whitespace-nowrap tabular-nums">{content.length} ký tự</span>
                         </div>
                     </div>
-                    <div className="p-4 sm:p-6">
+                    <div className="p-3.5 sm:p-6">
                         {/* Selector: Post identity (Cá nhân / Page) */}
                         {fbUser && (
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 p-3 bg-blue-50/20 dark:bg-slate-900/30 rounded-2xl border border-blue-100/50 dark:border-slate-700/50 text-xs">
@@ -4136,30 +4272,31 @@ Input:
                             </div>
                         )}
                         <div className="flex flex-wrap items-center justify-between gap-2 p-1.5 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-border-light mb-3 shadow-sm">
-                            <div className="flex flex-wrap items-center gap-1">
-                                {['format_bold', 'format_italic', 'link', 'sentiment_satisfied', 'format_list_bulleted'].map((icon, i) => (
-                                    <React.Fragment key={icon}>
-                                        <button type="button" className="min-w-[38px] min-h-[38px] sm:min-w-0 sm:min-h-0 p-2 sm:p-1.5 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded-lg text-text-secondary hover:text-primary transition-all">
-                                            <span className="material-symbols-outlined text-[19px] sm:text-[18px]">{icon}</span>
-                                        </button>
-                                        {i === 1 && <div className="w-px h-5 bg-gray-300 dark:bg-slate-700 mx-1 self-center"></div>}
-                                    </React.Fragment>
-                                ))}
-                            </div>
                             {onFormatContent && (
                                 <button
                                     type="button"
                                     onClick={onFormatContent}
                                     disabled={!content || !content.trim() || isRewriting}
-                                    className="inline-flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all disabled:opacity-40 whitespace-nowrap"
+                                    className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all disabled:opacity-40 whitespace-nowrap"
                                     title="Tự động tách dòng theo emoji, ngăn đoạn rõ ràng & tách cụm hashtag"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">auto_fix_high</span>
                                     <span>Tối ưu xuống dòng</span>
                                 </button>
                             )}
+                            {content && content.trim() && !isRewriting && (
+                                <button
+                                    type="button"
+                                    onClick={() => onContentChange('')}
+                                    className="inline-flex items-center gap-1 min-h-[38px] px-2.5 py-1.5 rounded-lg text-xs font-semibold text-text-secondary hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors whitespace-nowrap"
+                                    title="Xóa nội dung đang soạn"
+                                >
+                                    <span className="material-symbols-outlined text-[15px]">delete_outline</span>
+                                    <span>Xóa chữ</span>
+                                </button>
+                            )}
                         </div>
-                        <div className={`relative mb-5 ${isRewriting ? 'ai-rewriting-border' : ''}`}>
+                        <div className={`relative mb-4 sm:mb-5 ${isRewriting ? 'ai-rewriting-border' : ''}`}>
                             {isRewriting && (
                                 <>
                                     <div className="absolute top-0 left-0 right-0 z-20 rounded-t-2xl overflow-hidden">
@@ -4174,7 +4311,7 @@ Input:
                             <textarea
                                 value={content}
                                 onChange={(e) => onContentChange(e.target.value)}
-                                className={`w-full min-h-[180px] p-4 text-sm leading-relaxed border-gray-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-y text-text-main dark:text-gray-100 placeholder:text-gray-400 bg-white dark:bg-slate-900 shadow-input dark:shadow-none ${isRewriting ? 'ai-textarea-glow' : ''}`}
+                                className={`w-full min-h-[150px] sm:min-h-[180px] p-3.5 sm:p-4 text-[15px] sm:text-sm leading-relaxed border-gray-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-y text-text-main dark:text-gray-100 placeholder:text-gray-400 bg-white dark:bg-slate-900 shadow-input dark:shadow-none ${isRewriting ? 'ai-textarea-glow' : ''}`}
                                 placeholder={t('campaign_desc')}
                                 readOnly={isRewriting}
                             />
@@ -4369,17 +4506,17 @@ Input:
                             );
                         })()}
 
-                        <div className="mb-6">
+                        <div className="mb-4 sm:mb-6">
                             <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">{t('image_label')}</label>
                             <div
-                                className="group/upload border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-3xl p-6 flex flex-col items-center justify-center text-center hover:bg-blue-50/30 dark:hover:bg-slate-800/30 hover:border-primary/40 transition-all cursor-pointer bg-gray-50/50 dark:bg-slate-900/30"
+                                className="group/upload border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center text-center hover:bg-blue-50/30 dark:hover:bg-slate-800/30 hover:border-primary/40 transition-all cursor-pointer bg-gray-50/50 dark:bg-slate-900/30"
                                 onClick={() => fileInputRef.current && fileInputRef.current.click()}
                             >
-                                <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-sm mb-3 group-hover/upload:scale-110 transition-transform duration-300">
-                                    <span className="material-symbols-outlined text-2xl text-primary/80">add_photo_alternate</span>
+                                <div className="bg-white dark:bg-slate-800 p-2.5 sm:p-3 rounded-full shadow-sm mb-2 sm:mb-3 group-hover/upload:scale-110 transition-transform duration-300">
+                                    <span className="material-symbols-outlined text-xl sm:text-2xl text-primary/80">add_photo_alternate</span>
                                 </div>
-                                <p className="text-sm text-text-main dark:text-gray-200 font-medium">{t('drag_drop')}</p>
-                                <p className="text-xs text-text-tertiary mt-1">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+                                <p className="text-xs sm:text-sm text-text-main dark:text-gray-200 font-medium">{t('drag_drop')}</p>
+                                <p className="text-[11px] sm:text-xs text-text-tertiary mt-1">PNG, JPG, GIF · Hỗ trợ chọn nhiều ảnh</p>
                                 <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
                                     const files = Array.from(e.target.files || []);
                                     files.forEach(f => {
@@ -4391,31 +4528,33 @@ Input:
                                 }} />
                             </div>
                             {images.length > 0 && (
-                                <div className="flex gap-4 mt-4 overflow-x-auto pb-3 pt-3 px-1">
+                                <div className="flex gap-3 sm:gap-4 mt-3 sm:mt-4 overflow-x-auto pb-2 pt-2.5 px-1 custom-scrollbar">
                                     {images.map(img => (
-                                        <div key={img.id} className="relative w-24 h-24 flex-shrink-0 group">
+                                        <div key={img.id} className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 group">
                                             <div className="w-full h-full rounded-xl overflow-hidden shadow-md border-2 border-gray-200 dark:border-slate-600 group-hover:border-primary transition-all">
-                                                <img src={img.data} className="w-full h-full object-cover" />
+                                                <img src={img.data} className="w-full h-full object-cover" alt="Ảnh đính kèm" />
                                             </div>
                                             <button
+                                                type="button"
+                                                aria-label="Xóa ảnh"
                                                 onClick={() => onImagesChange(p => p.filter(i => i.id !== img.id))}
-                                                className="absolute -top-2 -right-2 w-6 h-6 bg-white dark:bg-slate-700 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white shadow-md border border-gray-200 dark:border-slate-600 z-10"
+                                                className="absolute -top-2 -right-2 w-7 h-7 sm:w-6 sm:h-6 bg-white dark:bg-slate-700 text-red-500 rounded-full flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white shadow-md border border-gray-200 dark:border-slate-600 z-10"
                                             >
-                                                <span className="material-symbols-outlined text-[14px]">close</span>
+                                                <span className="material-symbols-outlined text-[15px] sm:text-[14px]">close</span>
                                             </button>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
-                        <div className="flex flex-col gap-3 pt-5 border-t border-border-light">
+                        <div className="flex flex-col gap-3 pt-4 sm:pt-5 border-t border-border-light">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="flex flex-wrap items-center gap-2.5">
+                                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5">
                                     <button
                                         type="button"
                                         onClick={onTestAI}
                                         disabled={isRewriting}
-                                        className={`flex items-center gap-2 px-4 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition-all ${isRewriting ? 'bg-gradient-to-r from-violet-600 to-purple-600 cursor-not-allowed' : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 hover:shadow-lg active:scale-95'}`}
+                                        className={`w-full sm:w-auto min-h-[44px] sm:min-h-0 flex items-center justify-center gap-2 px-4 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition-all ${isRewriting ? 'bg-gradient-to-r from-violet-600 to-purple-600 cursor-not-allowed' : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 hover:shadow-lg active:scale-95'}`}
                                     >
                                         {isRewriting ? (
                                             <>
@@ -4434,7 +4573,7 @@ Input:
                                             value={writingStyle}
                                             onChange={e => setWritingStyle(e.target.value)}
                                             aria-label="Phong cách viết AI"
-                                            className="px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border border-border-light dark:border-slate-700 rounded-xl text-xs font-semibold text-text-main dark:text-gray-200 outline-none focus:border-purple-500 cursor-pointer"
+                                            className="w-full sm:w-auto min-h-[44px] sm:min-h-0 px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border border-border-light dark:border-slate-700 rounded-xl text-xs font-semibold text-text-main dark:text-gray-200 outline-none focus:border-purple-500 cursor-pointer"
                                         >
                                             <option value="auto">Đa dạng chống spam (8 góc)</option>
                                             <option value="professional">Chuyên nghiệp &amp; Cao cấp</option>
@@ -4556,19 +4695,19 @@ Input:
             };
 
             return (
-                <div className="bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 flex flex-col h-[500px] sm:h-[560px] lg:h-[calc(100vh-6.5rem)] lg:max-h-[760px] lg:min-h-[500px] overflow-hidden">
-                    <div className="p-4 border-b border-border-light bg-gray-50/30 dark:bg-slate-800/50">
+                <div className="bg-card-light dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-border-light/50 flex flex-col h-[calc(100vh-13.5rem)] min-h-[420px] max-h-[640px] lg:h-[calc(100vh-6.5rem)] lg:max-h-[760px] lg:min-h-[500px] overflow-hidden">
+                    <div className="p-3.5 sm:p-4 border-b border-border-light bg-gray-50/30 dark:bg-slate-800/50">
                         <div className="flex justify-between items-center mb-3">
                             <div className="flex items-center gap-2">
                                 <svg viewBox="0 0 24 24" className="w-5 h-5 fill-primary"><path d="M16.67 13.13C18.04 14.06 19 15.32 19 17v3h4v-3c0-2.18-3.57-3.47-6.33-3.87zM15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4c-.47 0-.91.1-1.33.24C14.5 5.27 15 6.58 15 8c0 1.42-.5 2.73-1.33 3.76.42.15.86.24 1.33.24zm-6 0c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                                <h2 className="font-semibold text-text-main dark:text-white">{t('groups_title')}</h2>
+                                <h2 className="font-semibold text-sm sm:text-base text-text-main dark:text-white">{t('groups_title')}</h2>
                             </div>
-                            <span className="bg-gray-100 dark:bg-slate-700 text-text-secondary text-xs font-bold px-2 py-1 rounded-md">{groups.length}</span>
+                            <span className="bg-gray-100 dark:bg-slate-700 text-text-secondary text-xs font-bold px-2 py-1 rounded-md tabular-nums">{groups.length}</span>
                         </div>
                         {isScanningGroups ? (
                             <button 
                                 onClick={onStopScan} 
-                                className="w-full font-semibold py-2.5 px-4 rounded-xl shadow-lg bg-rose-500 hover:bg-rose-600 text-white transition-all flex justify-center items-center gap-2 active:scale-95 animate-pulse"
+                                className="w-full min-h-[44px] font-semibold py-2.5 px-4 rounded-xl shadow-lg bg-rose-500 hover:bg-rose-600 text-white transition-all flex justify-center items-center gap-2 active:scale-95 animate-pulse"
                             >
                                 <span className="material-symbols-outlined text-[18px] animate-spin">sync</span>
                                 <span>Dừng quét nhóm</span>
@@ -4576,7 +4715,7 @@ Input:
                         ) : (
                             <button 
                                 onClick={onScan} 
-                                className="w-full font-semibold py-2.5 px-4 rounded-xl shadow-lg bg-primary hover:bg-primary-hover text-white transition-all flex justify-center items-center gap-2 active:scale-95"
+                                className="w-full min-h-[44px] font-semibold py-2.5 px-4 rounded-xl shadow-lg bg-primary hover:bg-primary-hover text-white transition-all flex justify-center items-center gap-2 active:scale-95"
                             >
                                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -4604,18 +4743,18 @@ Input:
                                     placeholder="Tìm kiếm nhóm..." 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-text-main dark:text-gray-200 placeholder:text-gray-400 outline-none"
+                                    className="w-full min-h-[42px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-text-main dark:text-gray-200 placeholder:text-gray-400 outline-none"
                                 />
                             </div>
                         )}
 
                         {/* Favorite Collections Section */}
                         {groups.length > 0 && (
-                            <div className="mt-3 border-t border-gray-100 dark:border-slate-700/50 pt-3">
+                            <div className="mt-3 border-t border-gray-100 dark:border-slate-700/50 pt-2.5">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-[12px] text-amber-500">star</span>
-                                        Bộ sưu tập nhóm ({collections.length})
+                                        <span className="material-symbols-outlined text-[13px] text-amber-500">star</span>
+                                        Bộ sưu tập ({collections.length})
                                     </span>
                                     
                                     {!isCreatingCollection && (
@@ -4627,9 +4766,9 @@ Input:
                                                 }
                                                 setIsCreatingCollection(true);
                                             }}
-                                            className="text-[10px] font-bold text-primary hover:underline flex items-center gap-0.5"
+                                            className="min-h-[32px] px-2 -mr-2 text-[11px] font-bold text-primary hover:underline flex items-center gap-0.5"
                                         >
-                                            <span className="material-symbols-outlined text-[10px]">add</span>
+                                            <span className="material-symbols-outlined text-[13px]">add</span>
                                             Lưu nhóm đã chọn
                                         </button>
                                     )}
@@ -4642,7 +4781,7 @@ Input:
                                             placeholder="Tên bộ sưu tập..."
                                             value={newCollectionName}
                                             onChange={(e) => setNewCollectionName(e.target.value)}
-                                            className="flex-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-[11px] outline-none focus:border-primary text-text-main dark:text-gray-200"
+                                            className="flex-1 min-h-[38px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-primary text-text-main dark:text-gray-200"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') handleSaveCollection();
                                                 if (e.key === 'Escape') setIsCreatingCollection(false);
@@ -4650,13 +4789,13 @@ Input:
                                         />
                                         <button 
                                             onClick={handleSaveCollection}
-                                            className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-sm"
+                                            className="min-h-[38px] bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-lg shadow-sm"
                                         >
                                             Lưu
                                         </button>
                                         <button 
                                             onClick={() => setIsCreatingCollection(false)}
-                                            className="bg-gray-100 dark:bg-slate-700 text-text-secondary hover:bg-gray-200 text-[10px] font-bold px-2 py-1 rounded-lg"
+                                            className="min-h-[38px] bg-gray-100 dark:bg-slate-700 text-text-secondary hover:bg-gray-200 text-xs font-bold px-2.5 py-1 rounded-lg"
                                         >
                                             Hủy
                                         </button>
@@ -4665,23 +4804,24 @@ Input:
 
                                 <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar scrollbar-thin">
                                     {collections.length === 0 ? (
-                                        <div className="text-[10px] text-text-tertiary italic py-1">
-                                            Chưa có bộ sưu tập nào. Tích chọn nhóm bên dưới rồi bấm "Lưu nhóm đã chọn" để tạo!
+                                        <div className="text-[11px] text-text-tertiary italic py-1">
+                                            Chưa có bộ sưu tập nào. Tích chọn nhóm bên dưới rồi bấm "Lưu nhóm đã chọn".
                                         </div>
                                     ) : (
                                         collections.map(col => (
                                             <div 
                                                 key={col.id}
                                                 onClick={() => handleApplyCollection(col)}
-                                                className="flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-amber-50/70 to-orange-50/70 dark:from-slate-800/80 dark:to-slate-800/80 hover:from-amber-100/70 hover:to-orange-100/70 dark:hover:from-slate-700/80 dark:hover:to-slate-700/80 border border-amber-200/50 dark:border-slate-700 rounded-full cursor-pointer text-[11px] font-semibold text-amber-800 dark:text-amber-400 hover:text-amber-900 transition-all shadow-sm flex-shrink-0 group/pill"
+                                                className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 min-h-[34px] bg-gradient-to-r from-amber-50/70 to-orange-50/70 dark:from-slate-800/80 dark:to-slate-800/80 hover:from-amber-100/70 hover:to-orange-100/70 dark:hover:from-slate-700/80 dark:hover:to-slate-700/80 border border-amber-200/50 dark:border-slate-700 rounded-full cursor-pointer text-xs font-semibold text-amber-800 dark:text-amber-400 hover:text-amber-900 transition-all shadow-sm flex-shrink-0 group/pill"
                                             >
                                                 <span>⭐ {col.name} ({col.groupIds.length})</span>
                                                 <button
+                                                    type="button"
                                                     onClick={(e) => handleDeleteCollection(e, col.id, col.name)}
-                                                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-text-tertiary hover:bg-red-500 hover:text-white transition-colors"
+                                                    className="w-6 h-6 rounded-full flex items-center justify-center text-text-tertiary hover:bg-red-500 hover:text-white transition-colors"
                                                     title="Xóa bộ sưu tập này"
                                                 >
-                                                    <span className="material-symbols-outlined text-[10px]">close</span>
+                                                    <span className="material-symbols-outlined text-[13px]">close</span>
                                                 </button>
                                             </div>
                                         ))
@@ -4692,19 +4832,19 @@ Input:
                     </div>
 
                     {groups.length > 0 && (
-                        <div className="px-4 py-2 flex justify-between items-center border-b border-border-light bg-gray-50/50 dark:bg-slate-800/30">
-                            <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className="px-3.5 sm:px-4 py-2 flex justify-between items-center border-b border-border-light bg-gray-50/50 dark:bg-slate-800/30">
+                            <label className="flex items-center gap-2.5 cursor-pointer group min-h-[36px]">
                                 <input 
                                     type="checkbox" 
                                     checked={isAllFilteredSelected}
                                     onChange={handleToggleAll}
-                                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-primary focus:ring-primary"
                                 />
                                 <span className="text-xs font-bold text-text-secondary group-hover:text-primary transition-colors">
-                                    {isAllFilteredSelected ? 'Bỏ chọn các nhóm tìm được' : 'Chọn tất cả nhóm này'}
+                                    {isAllFilteredSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả nhóm này'}
                                 </span>
                             </label>
-                            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                            <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full tabular-nums">
                                 {selectedGroups.size} đã chọn
                             </span>
                         </div>
@@ -4718,8 +4858,8 @@ Input:
                             </div>
                         ) : (
                             filteredGroups.map(g => (
-                                <div key={g.id} onClick={() => onToggleGroup(g.id)} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${selectedGroups.has(g.id) ? 'bg-blue-50/60 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'border-transparent hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
-                                    <input type="checkbox" checked={selectedGroups.has(g.id)} onChange={() => { }} className="w-4 h-4 text-primary pointer-events-none" />
+                                <div key={g.id} onClick={() => onToggleGroup(g.id)} className={`flex items-center gap-3 px-3 py-2.5 min-h-[52px] rounded-xl border cursor-pointer transition-colors active:scale-[0.99] ${selectedGroups.has(g.id) ? 'bg-blue-50/60 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'border-transparent hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
+                                    <input type="checkbox" checked={selectedGroups.has(g.id)} onChange={() => { }} className="w-5 h-5 sm:w-4 sm:h-4 text-primary pointer-events-none flex-shrink-0" />
                                     <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0 bg-cover bg-center" style={{ backgroundImage: g.image ? `url(${g.image})` : undefined }}>
                                         {!g.image && (g.name || 'GR').substring(0, 2).toUpperCase()}
                                     </div>
@@ -4730,15 +4870,15 @@ Input:
                             ))
                         )}
                     </div>
-                    <div className="p-4 border-t border-border-light bg-gray-50/80 dark:bg-slate-800/80 space-y-3">
+                    <div className="p-3.5 sm:p-4 border-t border-border-light bg-gray-50/80 dark:bg-slate-800/80 space-y-2.5 sm:space-y-3">
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-text-secondary">{t('selected')}</span>
-                            <span className="font-bold text-primary">{selectedGroups.size} groups</span>
+                            <span className="font-bold text-primary tabular-nums">{selectedGroups.size} groups</span>
                         </div>
                         {isPosting ? (
                             <button
                                 onClick={onStopPost}
-                                className="w-full font-semibold py-3 px-4 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white active:scale-95"
+                                className="w-full min-h-[48px] font-semibold py-3 px-4 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white active:scale-95"
                             >
                                 <span className="material-symbols-outlined text-[18px]">stop_circle</span>
                                 <span>{t('stop')}</span>
@@ -4746,7 +4886,7 @@ Input:
                         ) : (
                             <button 
                                 onClick={groups.length === 0 || isScanningGroups ? () => showToast(isScanningGroups ? 'Vui lòng chờ quét xong danh sách nhóm' : 'Vui lòng Quét nhóm trước khi thực hiện chức năng này', 'error') : onStartPost} 
-                                className={`w-full font-semibold py-3 px-4 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 ${groups.length === 0 || isScanningGroups ? 'bg-gray-400 text-white cursor-not-allowed opacity-70' : 'bg-primary hover:bg-primary-hover text-white'}`}
+                                className={`w-full min-h-[48px] font-semibold py-3 px-4 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 active:scale-[0.98] ${groups.length === 0 || isScanningGroups ? 'bg-gray-400 text-white cursor-not-allowed opacity-70' : 'bg-primary hover:bg-primary-hover text-white'}`}
                             >
                                 <span>{t('start_post')}</span>
                                 <span className="material-symbols-outlined text-[18px]">send</span>
@@ -4815,6 +4955,7 @@ Input:
         }) {
             const [manualPostUrl, setManualPostUrl] = useState('');
             const [pageSearch, setPageSearch] = useState('');
+            const [mobileShareStep, setMobileShareStep] = useState(1);
 
             const filteredPages = fbPages.filter(p =>
                 !pageSearch.trim() || String(p.name || '').toLowerCase().includes(pageSearch.trim().toLowerCase())
@@ -4831,13 +4972,38 @@ Input:
 
             return (
                 <>
-                    <div className="mb-6 sm:mb-8">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-main dark:text-white mb-1.5">{t('nav_share')}</h1>
-                        <p className="text-text-secondary text-sm">{t('nav_share_desc')}</p>
+                    <div className="mb-3.5 sm:mb-6 lg:mb-8">
+                        <h1 className="hidden lg:block text-3xl font-bold tracking-tight text-text-main dark:text-white mb-1.5">{t('nav_share')}</h1>
+                        <p className="hidden lg:block text-text-secondary text-sm">{t('nav_share_desc')}</p>
+
+                        {/* Mobile 3-Step Switcher */}
+                        <div className="lg:hidden grid grid-cols-3 gap-1 p-1 bg-slate-200/70 dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+                            <button
+                                type="button"
+                                onClick={() => setMobileShareStep(1)}
+                                className={`flex items-center justify-center gap-1 min-h-[42px] px-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${mobileShareStep === 1 ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400'}`}
+                            >
+                                <span>1. Trang</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setMobileShareStep(2)}
+                                className={`flex items-center justify-center gap-1 min-h-[42px] px-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${mobileShareStep === 2 ? 'bg-white dark:bg-slate-700 text-pink-600 dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400'}`}
+                            >
+                                <span className="tabular-nums">2. Bài ({selectedPosts.size})</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setMobileShareStep(3)}
+                                className={`flex items-center justify-center gap-1 min-h-[42px] px-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${mobileShareStep === 3 ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400'}`}
+                            >
+                                <span className="tabular-nums">3. Nhóm ({selectedGroups.size})</span>
+                            </button>
+                        </div>
                     </div>
 
                     {(isOutdatedExt || hasDuplicateExt) && (
-                        <div className="mb-5 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-start gap-2.5 text-xs sm:text-sm text-rose-700 dark:text-rose-300">
                                 <span className="material-symbols-outlined text-[20px] shrink-0 mt-0.5">warning</span>
                                 <div>
@@ -4854,9 +5020,9 @@ Input:
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
                         {/* Step 1: Select/Enter Page */}
-                        <div className="bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 p-4 sm:p-5">
+                        <div className={`${mobileShareStep === 1 ? 'block' : 'hidden lg:block'} bg-card-light dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-border-light/50 p-4 sm:p-5`}>
                             <div className="flex items-center justify-between gap-2 mb-4">
                                 <div className="flex items-center gap-2 min-w-0">
                                     <span className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
@@ -4957,7 +5123,7 @@ Input:
                         </div>
 
                         {/* Step 2: Select Posts */}
-                        <div className="bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 p-4 sm:p-5 flex flex-col min-h-[340px] lg:h-[510px]">
+                        <div className={`${mobileShareStep === 2 ? 'flex' : 'hidden lg:flex'} bg-card-light dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-border-light/50 p-4 sm:p-5 flex-col min-h-[340px] lg:h-[510px]`}>
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2 min-w-0">
                                     <span className="w-6 h-6 rounded-full bg-pink-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
@@ -5068,7 +5234,7 @@ Input:
                         </div>
 
                         {/* Step 3: Select Groups & Share */}
-                        <div className="bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 p-4 sm:p-5 flex flex-col min-h-[360px] lg:h-[510px]">
+                        <div className={`${mobileShareStep === 3 ? 'flex' : 'hidden lg:flex'} bg-card-light dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-border-light/50 p-4 sm:p-5 flex-col min-h-[360px] lg:h-[510px]`}>
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
@@ -5222,6 +5388,9 @@ Input:
                         logs={logs}
                         progress={progress}
                         t={t}
+                        isPosting={isSharing}
+                        postingCountdown={shareCountdown}
+                        onStopPost={onStopShare}
                         successItems={successItems}
                         isCheckingStatus={isCheckingStatus}
                         checkProgress={checkProgress}
@@ -5328,8 +5497,8 @@ Input:
                 setDownloadSuccess('');
 
                 try {
-                    const { filename, kb } = await downloadExtensionZip('3.8');
-                    const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v3.8 rồi cài vào chrome://extensions.`;
+                    const { filename, kb } = await downloadExtensionZip('4.1');
+                    const successMsg = `Đã tải ${filename} hợp lệ (${kb} KB). Giải nén thư mục fb-tool-ext-v4.1 rồi cài vào chrome://extensions.`;
                     setDownloadSuccess(successMsg);
                     if (showToast) {
                         showToast(successMsg, 'success');
@@ -5425,7 +5594,7 @@ Input:
                                                     </span>
                                                     <span>{isDownloading ? 'Đang kiểm tra & tải...' : t('ext_download_btn')}</span>
                                                     {!isDownloading && (
-                                                        <span className="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded shrink-0">v3.8</span>
+                                                        <span className="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded shrink-0">v4.1</span>
                                                     )}
                                                 </button>
                                                 <button
@@ -5576,29 +5745,29 @@ Input:
 
             return (
                 <div className="animate-fade-in">
-                    <div className="mb-8 text-center">
-                        <h1 className="text-3xl font-bold text-text-main dark:text-white mb-2">{t('sub_title')}</h1>
-                        <p className="text-text-secondary">{t('sub_desc')}</p>
+                    <div className="mb-5 sm:mb-8 text-center">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-text-main dark:text-white mb-1.5 sm:mb-2">{t('sub_title')}</h1>
+                        <p className="text-sm sm:text-base text-text-secondary">{t('sub_desc')}</p>
                     </div>
 
                     {!googleUser ? (
-                        <div className="max-w-md mx-auto bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-card ring-1 ring-border-light/50 text-center mb-12">
+                        <div className="max-w-md mx-auto bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-card ring-1 ring-border-light/50 text-center mb-10 sm:mb-12">
                             <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <span className="material-symbols-outlined text-3xl text-primary">account_circle</span>
                             </div>
                             <h2 className="text-xl font-bold text-text-main dark:text-white mb-2">{t('sub_login_google')}</h2>
                             <p className="text-text-secondary mb-6">{t('sub_login_google_desc')}</p>
-                            <button onClick={onGoogleLogin} className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-600 py-3 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm">
-                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" />
+                            <button onClick={onGoogleLogin} className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-600 py-3 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm">
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
                                 <span>{t('sub_login_google')}</span>
                             </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-8 mb-8 sm:mb-12">
                             {(() => {
                                 const activeVisualPlan = isAdminLifetime ? 'pro' : (isSubscriptionActive() ? subscription.plan : 'free');
                                 return plans.map(plan => (
-                                    <div key={plan.id} className={`relative bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-card ring-1 ring-border-light/50 flex flex-col transition-all hover:shadow-soft hover:scale-[1.02] ${plan.popular ? 'ring-2 ring-primary shadow-glow' : ''}`}>
+                                    <div key={plan.id} className={`relative bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-card ring-1 ring-border-light/50 flex flex-col transition-all hover:shadow-soft hover:scale-[1.01] ${plan.popular ? 'ring-2 ring-primary shadow-glow' : ''}`}>
                                         {plan.popular && (
                                             <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Most Popular</span>
                                         )}
@@ -5808,6 +5977,9 @@ Input:
             logs,
             progress,
             t,
+            isPosting = false,
+            postingCountdown = null,
+            onStopPost,
             successItems = [],
             isCheckingStatus = false,
             checkProgress = null,
@@ -5996,30 +6168,46 @@ Input:
             }, [logs]);
 
             return (
-                <div className={`${noTopMargin ? '' : 'mt-6 sm:mt-8 '}bg-card-light dark:bg-slate-800 rounded-3xl shadow-card ring-1 ring-border-light/50 overflow-hidden`}>
-                    <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-border-light flex flex-wrap justify-between items-center gap-2 bg-gray-50/30 dark:bg-slate-800/50">
-                        <div className="flex items-center gap-3">
+                <div className={`${noTopMargin ? '' : 'mt-5 sm:mt-8 '}bg-card-light dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-border-light/50 overflow-hidden`}>
+                    <div className="px-3.5 sm:px-6 py-3 sm:py-4 border-b border-border-light flex flex-wrap justify-between items-center gap-2 bg-gray-50/30 dark:bg-slate-800/50">
+                        <div className="flex items-center gap-2.5 sm:gap-3">
                             <div className="p-1.5 bg-slate-100 dark:bg-slate-700 rounded-md text-slate-600 dark:text-slate-300">
                                 <span className="material-symbols-outlined text-[20px]">terminal</span>
                             </div>
-                            <h2 className="font-semibold text-base text-text-main dark:text-white">{t('progress_title')}</h2>
+                            <h2 className="font-semibold text-sm sm:text-base text-text-main dark:text-white">{t('progress_title')}</h2>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+                            {isPosting && postingCountdown && postingCountdown.current > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 tabular-nums">
+                                    <span className="material-symbols-outlined text-[13px]">timer</span>
+                                    {postingCountdown.current}s
+                                </span>
+                            )}
                             {counts.all > 0 && (
-                                <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 shadow-sm">
+                                <div className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800 shadow-sm tabular-nums">
                                     <span className="material-symbols-outlined text-[14px] text-emerald-600 dark:text-emerald-400">check_circle</span>
                                     <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{counts.all}</span>
-                                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">thành công</span>
+                                    <span className="hidden sm:inline text-xs font-medium text-emerald-600 dark:text-emerald-400">thành công</span>
                                 </div>
                             )}
-                            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
-                                <span className="text-xs font-medium text-text-secondary">Tiến độ:</span>
+                            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm tabular-nums">
+                                <span className="text-[11px] sm:text-xs font-medium text-text-secondary">Tiến độ:</span>
                                 <span className="text-xs font-bold text-primary">{progress}%</span>
                             </div>
+                            {isPosting && onStopPost && (
+                                <button
+                                    type="button"
+                                    onClick={onStopPost}
+                                    className="lg:hidden inline-flex items-center gap-1 min-h-[34px] px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold shadow-sm active:scale-95 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[15px]">stop_circle</span>
+                                    <span>Dừng</span>
+                                </button>
+                            )}
                         </div>
                     </div>
-                    <div className="p-6">
-                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2 mb-6 overflow-hidden border border-gray-200 dark:border-slate-600 inner-shadow">
+                    <div className="p-3.5 sm:p-6">
+                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2 mb-4 sm:mb-6 overflow-hidden border border-gray-200 dark:border-slate-600 inner-shadow">
                             <div className="bg-primary h-2 rounded-full relative overflow-hidden shadow-glow transition-all duration-300" style={{ width: `${Math.max(progress, 2)}%` }}>
                                 <div className="absolute inset-0 bg-white/30 w-full h-full animate-[shimmer_2s_infinite] -skew-x-12"></div>
                             </div>
@@ -6313,9 +6501,9 @@ Input:
                                                                     type="button"
                                                                     onClick={() => handleCopySingleLink(item.id, cleanLink)}
                                                                     title={isCopied ? 'Đã sao chép link' : 'Sao chép link bài viết'}
-                                                                    className={`p-1 rounded-md transition-colors ${isCopied ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40' : 'text-text-tertiary hover:text-primary hover:bg-primary/10'}`}
+                                                                    className={`min-w-[34px] min-h-[34px] sm:min-w-0 sm:min-h-0 p-1.5 sm:p-1 flex items-center justify-center rounded-md transition-colors ${isCopied ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40' : 'text-text-tertiary hover:text-primary hover:bg-primary/10'}`}
                                                                 >
-                                                                    <span className="material-symbols-outlined text-[15px]">{isCopied ? 'check' : 'content_copy'}</span>
+                                                                    <span className="material-symbols-outlined text-[16px] sm:text-[15px]">{isCopied ? 'check' : 'content_copy'}</span>
                                                                 </button>
                                                             )}
                                                             {cleanLink && onCheckSingleStatus && (
@@ -6324,9 +6512,9 @@ Input:
                                                                     disabled={isCheckingStatus || isChecking}
                                                                     onClick={() => onCheckSingleStatus(item.id)}
                                                                     title="Kiểm tra lại trạng thái bài này"
-                                                                    className="p-1 rounded-md text-text-tertiary hover:text-primary hover:bg-primary/10 disabled:opacity-40 transition-colors"
+                                                                    className="min-w-[34px] min-h-[34px] sm:min-w-0 sm:min-h-0 p-1.5 sm:p-1 flex items-center justify-center rounded-md text-text-tertiary hover:text-primary hover:bg-primary/10 disabled:opacity-40 transition-colors"
                                                                 >
-                                                                    <span className={`material-symbols-outlined text-[15px] ${isChecking ? 'animate-spin' : ''}`}>refresh</span>
+                                                                    <span className={`material-symbols-outlined text-[16px] sm:text-[15px] ${isChecking ? 'animate-spin' : ''}`}>refresh</span>
                                                                 </button>
                                                             )}
                                                             {cleanLink && (
@@ -6335,9 +6523,9 @@ Input:
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     title="Mở bài viết trên Facebook"
-                                                                    className="p-1 rounded-md text-text-tertiary hover:text-primary hover:bg-primary/10 transition-colors"
+                                                                    className="min-w-[34px] min-h-[34px] sm:min-w-0 sm:min-h-0 p-1.5 sm:p-1 flex items-center justify-center rounded-md text-text-tertiary hover:text-primary hover:bg-primary/10 transition-colors"
                                                                 >
-                                                                    <span className="material-symbols-outlined text-[15px]">open_in_new</span>
+                                                                    <span className="material-symbols-outlined text-[16px] sm:text-[15px]">open_in_new</span>
                                                                 </a>
                                                             )}
                                                         </div>
@@ -6355,27 +6543,27 @@ Input:
                             </div>
                             {/* Right Column: Full Activity Log */}
                             <div className="flex flex-col">
-                                <div className="flex items-center gap-2 mb-3">
+                                <div className="flex items-center gap-2 mb-2.5 sm:mb-3">
                                     <div className="p-1 bg-slate-100 dark:bg-slate-700 rounded-md">
                                         <span className="material-symbols-outlined text-[16px] text-slate-500 dark:text-slate-400">terminal</span>
                                     </div>
                                     <h3 className="text-sm font-semibold text-text-main dark:text-white">Nhật ký hoạt động</h3>
-                                    <span className="ml-auto text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">{logs.length} dòng</span>
+                                    <span className="ml-auto text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full tabular-nums">{logs.length} dòng</span>
                                 </div>
-                                <div ref={logContainerRef} className="bg-[#1e293b] rounded-xl p-4 h-56 overflow-y-auto font-mono text-xs shadow-inner border border-slate-700 custom-scrollbar">
+                                <div ref={logContainerRef} className="bg-[#1e293b] rounded-xl p-3 sm:p-4 h-64 sm:h-56 overflow-y-auto font-mono text-[11px] sm:text-xs shadow-inner border border-slate-700 custom-scrollbar">
                                     <div className="flex flex-col gap-2">
                                         {logs.length === 0 ? (
-                                            <div className="flex items-start gap-3 text-slate-400 opacity-60 hover:bg-white/5 p-1 rounded transition-colors">
-                                                <span className="text-slate-600 min-w-[60px] select-none text-[11px]">--:--:--</span>
+                                            <div className="flex items-start gap-2.5 sm:gap-3 text-slate-400 opacity-60 hover:bg-white/5 p-1 rounded transition-colors">
+                                                <span className="text-slate-600 min-w-[48px] sm:min-w-[60px] select-none text-[10px] sm:text-[11px] tabular-nums">--:--:--</span>
                                                 <span className="material-symbols-outlined text-[14px] mt-0.5 shrink-0">hourglass_empty</span>
                                                 <span className="leading-relaxed italic">System Ready...</span>
                                             </div>
                                         ) : (
                                             logs.map((log, i) => (
-                                                <div key={i} className={`flex items-start gap-2 p-1 rounded transition-colors hover:bg-white/5 ${log.type === 'error' ? 'text-red-400/90' : log.type === 'success' ? 'text-emerald-400/90' : log.type === 'warning' ? 'text-amber-400/90' : 'text-blue-400/90'}`}>
-                                                    <span className="text-slate-500 min-w-[60px] select-none text-[11px] flex-shrink-0">{log.time}</span>
+                                                <div key={i} className={`flex items-start gap-1.5 sm:gap-2 p-1 rounded transition-colors hover:bg-white/5 ${log.type === 'error' ? 'text-red-400/90' : log.type === 'success' ? 'text-emerald-400/90' : log.type === 'warning' ? 'text-amber-400/90' : 'text-blue-400/90'}`}>
+                                                    <span className="text-slate-500 min-w-[48px] sm:min-w-[60px] select-none text-[10px] sm:text-[11px] flex-shrink-0 tabular-nums">{log.time}</span>
                                                     <span className="material-symbols-outlined text-[14px] mt-0.5 shrink-0">{log.type === 'success' ? 'check_circle' : log.type === 'error' ? 'error' : log.type === 'warning' ? 'warning' : 'info'}</span>
-                                                    <span className="leading-relaxed break-all">{log.message}</span>
+                                                    <span className="leading-relaxed break-words min-w-0 flex-1">{log.message}</span>
                                                 </div>
                                             ))
                                         )}
@@ -6434,26 +6622,26 @@ Input:
 
             return (
                 <div
-                    className={`relative flex items-center gap-3 px-4 py-4 rounded-3xl shadow-2xl text-white overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl animate-slide-in-right ${styles.bg}`}
+                    className={`relative flex items-center gap-2.5 sm:gap-3 px-3.5 py-2.5 sm:px-4 sm:py-3.5 rounded-2xl sm:rounded-3xl shadow-2xl text-white overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl animate-slide-in-right ${styles.bg}`}
                 >
                     {/* Glow effect */}
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
 
                     {/* Icon */}
-                    <div className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-2xl ${styles.iconBg}`}>
-                        <span className="material-symbols-outlined text-[24px] filled">{styles.icon}</span>
+                    <div className={`relative z-10 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex-shrink-0 ${styles.iconBg}`}>
+                        <span className="material-symbols-outlined text-[20px] sm:text-[24px] filled">{styles.icon}</span>
                     </div>
 
                     {/* Content */}
                     <div className="relative z-10 flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white/90 truncate">{toast.message}</p>
+                        <p className="text-xs sm:text-sm font-semibold text-white/95 line-clamp-2 leading-snug">{toast.message}</p>
                     </div>
 
                     {/* Close button */}
                     <button
                         type="button"
                         onClick={() => removeToast(toast.id)}
-                        className="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                        className="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0"
                     >
                         <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>

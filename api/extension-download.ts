@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import type { ApiRequest, ApiResponse } from './_types.js';
 
-export const EXTENSION_VERSION = '3.8';
+export const EXTENSION_VERSION = '4.1';
 export const EXTENSION_FILENAME = `fb-tool-ext-v${EXTENSION_VERSION}.zip`;
 
 function getQueryParamLocal(req: ApiRequest, key: string): string {
