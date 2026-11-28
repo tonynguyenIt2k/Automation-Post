@@ -2,59 +2,74 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
     <title>Đăng nhập - AutoPost Pro</title>
     <link rel="icon" href="/assets/icons/icon48.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .glass {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        .dark .glass {
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        @keyframes blob {
-            0% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-            100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob { animation: blob 7s infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-    </style>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <!-- Legacy iOS Polyfills & Runtime Shims (must load first) -->
+    <script src="/ios-polyfill.js"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#2563EB',
-                        'primary-hover': '#1D4ED8',
-                    }
-                }
-            }
-        }
         try {
-            let theme = localStorage.getItem('theme');
-            if (theme) {
-                try { theme = JSON.parse(theme); } catch (e) {}
+            var savedTheme = window.localStorage.getItem('theme');
+            if (savedTheme) {
+                try { savedTheme = JSON.parse(savedTheme); } catch (e) {}
             }
-            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            var prefersDark = false;
+            try {
+                prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } catch (e) {}
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
                 document.documentElement.classList.add('dark');
             }
         } catch (e) {}
     </script>
+
+    <!-- Pre-compiled Legacy-iOS-Safe Tailwind CSS & Custom Styles -->
+    <link rel="stylesheet" href="/tw-legacy.css">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            min-height: calc(var(--app-vh, 1vh) * 100);
+            min-height: 100dvh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        @-webkit-keyframes blob {
+            0% { -webkit-transform: translate(0px, 0px) scale(1); transform: translate(0px, 0px) scale(1); }
+            33% { -webkit-transform: translate(30px, -50px) scale(1.1); transform: translate(30px, -50px) scale(1.1); }
+            66% { -webkit-transform: translate(-20px, 20px) scale(0.9); transform: translate(-20px, 20px) scale(0.9); }
+            100% { -webkit-transform: translate(0px, 0px) scale(1); transform: translate(0px, 0px) scale(1); }
+        }
+        @keyframes blob {
+            0% { -webkit-transform: translate(0px, 0px) scale(1); transform: translate(0px, 0px) scale(1); }
+            33% { -webkit-transform: translate(30px, -50px) scale(1.1); transform: translate(30px, -50px) scale(1.1); }
+            66% { -webkit-transform: translate(-20px, 20px) scale(0.9); transform: translate(-20px, 20px) scale(0.9); }
+            100% { -webkit-transform: translate(0px, 0px) scale(1); transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob { -webkit-animation: blob 7s infinite; animation: blob 7s infinite; }
+        .animation-delay-2000 { -webkit-animation-delay: 2s; animation-delay: 2s; }
+        .animation-delay-4000 { -webkit-animation-delay: 4s; animation-delay: 4s; }
+    </style>
+
+    <!-- Firebase v8.10.1 ES5 SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-[100dvh] flex items-center justify-center relative overflow-x-hidden overflow-y-auto p-4 py-6 sm:py-8 transition-colors duration-300">
 
@@ -72,7 +87,7 @@
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white shadow-lg shadow-blue-500/30 mb-4">
                 <span class="material-symbols-outlined text-4xl">rocket_launch</span>
             </div>
-            <h1 id="brand-title" class="text-2xl md:text-3xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">AutoPost Pro</h1>
+            <h1 id="brand-title" class="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">AutoPost Pro</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Đăng nhập để đồng bộ nhóm, bộ sưu tập &amp; AI viết bài</p>
         </div>
 
@@ -173,292 +188,7 @@
         <span id="toast-msg" class="text-sm font-medium"></span>
     </div>
 
-    <script>
-        const card = document.getElementById('login-card');
-        const btnLogin = document.getElementById('btn-login');
-        const btnDemoLogin = document.getElementById('btn-demo-login');
-        const loading = document.getElementById('loading');
-        const loadingText = document.getElementById('loading-text');
-        const authActions = document.getElementById('auth-actions');
-        const toast = document.getElementById('toast');
-        const toastMsg = document.getElementById('toast-msg');
-        const toastIcon = document.getElementById('toast-icon');
-        const brandTitle = document.getElementById('brand-title');
-
-        let toastTimer = null;
-        let auth = null;
-        let rtdb = null;
-
-        // Animate card in
-        setTimeout(() => {
-            card.classList.remove('scale-95', 'opacity-0');
-            card.classList.add('scale-100', 'opacity-100');
-        }, 80);
-
-        function showToast(msg, type = 'error') {
-            if (toastTimer) clearTimeout(toastTimer);
-            toastMsg.innerText = msg;
-            toast.className = `fixed top-4 left-4 right-4 sm:left-auto sm:right-5 sm:max-w-sm z-50 transform translate-y-0 opacity-100 transition-all duration-300 px-4 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 ${type === 'success' ? 'bg-emerald-500' : type === 'info' ? 'bg-blue-600' : 'bg-rose-500'} text-white`;
-            toastIcon.innerText = type === 'success' ? 'check_circle' : type === 'info' ? 'info' : 'error';
-            toastTimer = setTimeout(() => {
-                toast.className = "fixed top-4 left-4 right-4 sm:left-auto sm:right-5 sm:max-w-sm z-50 transform translate-y-[-140px] opacity-0 transition-all duration-300 bg-rose-500 text-white px-4 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 pointer-events-none";
-            }, 3500);
-        }
-
-        // Safe relative redirect sanitization (prevents open redirect)
-        const urlParams = new URLSearchParams(window.location.search);
-        const rawRedirect = urlParams.get('redirect') || '/';
-        const allowedRedirects = [
-            '/', '/share', '/pricing', '/admin',
-            '/index.html', '/share.html', '/pricing.html', '/admin.html',
-            'index.html', 'share.html', 'pricing.html', 'admin.html'
-        ];
-        const redirect = allowedRedirects.includes(rawRedirect) ? rawRedirect : '/';
-
-        async function completeLocalSession(userObj) {
-            authActions.classList.add('hidden');
-            loading.classList.remove('hidden');
-            loading.classList.add('flex');
-            loadingText.innerText = "Đang đồng bộ tài khoản...";
-
-            let syncedUser = null;
-            try {
-                const res = await fetch('/api/users/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userObj)
-                });
-                if (res.ok) syncedUser = await res.json();
-            } catch (e) {
-                console.warn('Local user sync warning:', e);
-            }
-
-            const storageUser = {
-                name: (syncedUser && syncedUser.name) || userObj.name,
-                email: (syncedUser && syncedUser.email) || userObj.email,
-                picture: (syncedUser && syncedUser.picture) || userObj.picture,
-                sub: (syncedUser && syncedUser.id) || userObj.sub,
-                isFirebaseAuth: false
-            };
-            const sub = (syncedUser && syncedUser.subscription) || {
-                plan: 'free',
-                expiresAt: null,
-                status: 'active',
-                history: []
-            };
-
-            localStorage.setItem('google_user', JSON.stringify(storageUser));
-            localStorage.setItem('subscription', JSON.stringify(sub));
-            if (syncedUser && syncedUser.role) {
-                localStorage.setItem('user_role', JSON.stringify(syncedUser.role));
-            }
-
-            showToast('Đăng nhập thành công! Đang chuyển hướng...', 'success');
-            setTimeout(() => {
-                window.location.href = redirect;
-            }, 600);
-        }
-
-        const DEFAULT_FIREBASE_CONFIG = {
-            apiKey: "AIzaSyCvxzc0u0lxvY5JxEIWKOp59pAGb78ocdA",
-            authDomain: "autopost-8f16e.firebaseapp.com",
-            databaseURL: "https://autopost-8f16e-default-rtdb.firebaseio.com",
-            projectId: "autopost-8f16e",
-            storageBucket: "autopost-8f16e.firebasestorage.app",
-            messagingSenderId: "213973905650",
-            appId: "1:213973905650:web:4875b21b380eda1a2de06b"
-        };
-
-        // Load branding & Firebase config from server (with bundled config fallback)
-        async function bootstrapAuth() {
-            try {
-                const [settingsRes, fbRes] = await Promise.all([
-                    fetch('/api/settings').catch(() => null),
-                    fetch('/api/firebase-config').catch(() => null)
-                ]);
-
-                if (settingsRes && settingsRes.ok) {
-                    const settingsVal = await settingsRes.json();
-                    if (settingsVal && settingsVal.appName) {
-                        document.title = `Đăng nhập - ${settingsVal.appName}`;
-                        brandTitle.innerText = settingsVal.appName;
-                    }
-                }
-
-                let activeFbConfig = DEFAULT_FIREBASE_CONFIG;
-                if (fbRes && fbRes.ok) {
-                    const fbData = await fbRes.json();
-                    if (fbData.configured && fbData.config) {
-                        activeFbConfig = fbData.config;
-                    } else if (fbData.configured === false) {
-                        activeFbConfig = null;
-                    }
-                }
-
-                if (activeFbConfig && typeof firebase !== 'undefined') {
-                    if (!firebase.apps.length) firebase.initializeApp(activeFbConfig);
-                    auth = firebase.auth();
-                    rtdb = firebase.database();
-
-                    auth.onAuthStateChanged(user => {
-                        if (user) {
-                            rtdb.ref('settings').once('value').then(snap => {
-                                const s = snap.val();
-                                if (s && s.appName) {
-                                    document.title = `Đăng nhập - ${s.appName}`;
-                                    brandTitle.innerText = s.appName;
-                                }
-                            }).catch(() => {});
-
-                            authActions.classList.add('hidden');
-                            loading.classList.remove('hidden');
-                            loading.classList.add('flex');
-                            loadingText.innerText = "Đang kiểm tra quyền truy cập...";
-
-                            rtdb.ref('users/' + user.uid).once('value').then(snapshot => {
-                                let userData = snapshot.val();
-                                if (!userData) {
-                                    const initSub = { plan: 'free', expiresAt: null, status: 'active', history: [] };
-                                    userData = {
-                                        name: user.displayName,
-                                        email: user.email,
-                                        picture: user.photoURL,
-                                        createdAt: new Date().toISOString(),
-                                        subscription: initSub,
-                                        role: 'user'
-                                    };
-                                    rtdb.ref('users/' + user.uid).set(userData);
-                                }
-
-                                const storageUser = {
-                                    name: user.displayName,
-                                    email: user.email,
-                                    picture: user.photoURL,
-                                    sub: user.uid,
-                                    isFirebaseAuth: true
-                                };
-                                localStorage.setItem('google_user', JSON.stringify(storageUser));
-                                if (userData && userData.subscription) {
-                                    localStorage.setItem('subscription', JSON.stringify(userData.subscription));
-                                }
-
-                                showToast('Đăng nhập thành công! Đang chuyển hướng...', 'success');
-                                setTimeout(() => {
-                                    window.location.href = redirect;
-                                }, 800);
-                            }).catch(() => {
-                                completeLocalSession({
-                                    sub: user.uid,
-                                    name: user.displayName || 'Người dùng Google',
-                                    email: user.email || '',
-                                    picture: user.photoURL || ''
-                                });
-                            });
-                        }
-                    });
-                }
-            } catch (err) {
-                console.warn('Bootstrap auth fallback:', err);
-            }
-        }
-
-        bootstrapAuth();
-
-        const domainHelper = document.getElementById('domain-helper');
-        const currentDomainText = document.getElementById('current-domain-text');
-        const btnCopyDomain = document.getElementById('btn-copy-domain');
-        const btnToggleDomainHelper = document.getElementById('btn-toggle-domain-helper');
-        const currentHostname = window.location.hostname || window.location.host;
-
-        if (currentDomainText) {
-            currentDomainText.textContent = currentHostname;
-        }
-
-        function copyDomainToClipboard() {
-            const finish = () => {
-                showToast('Đã sao chép tên miền: ' + currentHostname, 'success');
-                if (btnCopyDomain) {
-                    const label = btnCopyDomain.querySelector('span:last-child');
-                    if (label) {
-                        label.textContent = 'Đã chép';
-                        setTimeout(() => { label.textContent = 'Sao chép'; }, 2000);
-                    }
-                }
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(currentHostname).then(finish).catch(() => {
-                    const ta = document.createElement('textarea');
-                    ta.value = currentHostname;
-                    ta.style.position = 'fixed';
-                    ta.style.opacity = '0';
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(ta);
-                    finish();
-                });
-            } else {
-                const ta = document.createElement('textarea');
-                ta.value = currentHostname;
-                ta.style.position = 'fixed';
-                ta.style.opacity = '0';
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                finish();
-            }
-        }
-
-        if (btnCopyDomain) {
-            btnCopyDomain.addEventListener('click', copyDomainToClipboard);
-        }
-        if (btnToggleDomainHelper && domainHelper) {
-            btnToggleDomainHelper.addEventListener('click', () => {
-                domainHelper.classList.toggle('hidden');
-            });
-        }
-
-        btnLogin.addEventListener('click', () => {
-            if (location.protocol === 'file:') {
-                showToast('Không hỗ trợ đăng nhập Google từ file:// trực tiếp. Vui lòng khởi chạy qua server.');
-                return;
-            }
-            if (!auth) {
-                showToast('Firebase Google Auth chưa được cấu hình trên máy chủ. Hãy dùng nút Đăng nhập nhanh bên dưới!', 'info');
-                return;
-            }
-            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err => {
-                if (err.code === 'auth/unauthorized-domain') {
-                    if (domainHelper) domainHelper.classList.remove('hidden');
-                    showToast('Tên miền chưa được thêm vào Authorized Domains — hãy sao chép tên miền ở khung hướng dẫn bên dưới!', 'error');
-                } else if (err.code === 'auth/popup-blocked') {
-                    showToast('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép popup hoặc dùng Đăng nhập nhanh.');
-                } else {
-                    showToast('Lỗi đăng nhập Google: ' + (err.message || err.code));
-                }
-            });
-        });
-
-        btnDemoLogin.addEventListener('click', () => {
-            const nameInput = document.getElementById('quick-name').value.trim();
-            const emailInput = document.getElementById('quick-email').value.trim();
-            if (!nameInput) {
-                showToast('Vui lòng nhập tên hiển thị!', 'error');
-                return;
-            }
-            if (!emailInput || !emailInput.includes('@')) {
-                showToast('Vui lòng nhập địa chỉ email hợp lệ!', 'error');
-                return;
-            }
-            const uid = 'local_' + btoa(unescape(encodeURIComponent(emailInput.toLowerCase()))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
-            completeLocalSession({
-                sub: uid,
-                name: nameInput,
-                email: emailInput,
-                picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(nameInput)}&background=2563eb&color=ffffff`
-            });
-        });
-    </script>
+    <!-- Pre-compiled Login Script (ES2015 / Safari 11+ compatible with iOS redirect auth fallback) -->
+    <script src="/login.bundle.js"></script>
 </body>
 </html>

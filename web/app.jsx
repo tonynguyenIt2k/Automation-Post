@@ -5911,10 +5911,15 @@ Input:
                 try {
                     const ta = document.createElement('textarea');
                     ta.value = text;
+                    ta.setAttribute('readonly', '');
                     ta.style.position = 'fixed';
+                    ta.style.top = '0';
+                    ta.style.left = '-9999px';
                     ta.style.opacity = '0';
                     document.body.appendChild(ta);
+                    ta.focus();
                     ta.select();
+                    try { ta.setSelectionRange(0, 999999); } catch (_) {}
                     const ok = document.execCommand('copy');
                     document.body.removeChild(ta);
                     return ok;
@@ -6473,4 +6478,12 @@ Input:
 
 
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        (function mountAutoPostApp() {
+            var rootEl = document.getElementById('root');
+            if (!rootEl) return;
+            if (typeof ReactDOM.createRoot === 'function') {
+                ReactDOM.createRoot(rootEl).render(<App />);
+            } else {
+                ReactDOM.render(<App />, rootEl);
+            }
+        })();
